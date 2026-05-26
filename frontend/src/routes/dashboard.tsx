@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Database, GitPullRequest, Plus, Search, RotateCw, Trash2, HelpCircle, Github, ChevronLeft, ChevronRight, Check, Sparkles, Clock, Activity, ShieldAlert, X } from "lucide-react";
+import { ArrowRight, Database, GitPullRequest, Plus, Search, RotateCw, Trash2, HelpCircle, Github, ChevronLeft, ChevronRight, Check, Sparkles, Clock, Activity, ShieldAlert, X, User, Zap, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/AppNav";
 import { useAuth } from "@/lib/auth";
@@ -8,7 +8,12 @@ import { GithubBrowser } from "@/components/GithubBrowser";
 import { toast } from "sonner";
 import { OnboardingTour } from "@/components/OnboardingTour";
 
-export const Route = createFileRoute("/dashboard")({ component: Dashboard });
+export const Route = createFileRoute("/dashboard")({
+  component: Dashboard,
+  validateSearch: (s: Record<string, unknown>): { profile?: string } => ({
+    profile: typeof s.profile === "string" ? s.profile : undefined,
+  }),
+});
 
 type Review = {
   id: string;
@@ -97,6 +102,8 @@ function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const search = Route.useSearch();
+
   const [activeTab, setActiveTab] = useState<"reviews" | "github" | "api">("reviews");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [findingsBySev, setFindingsBySev] = useState<Record<string, { critical: number; high: number; medium: number; low: number; top: string }>>({});
@@ -105,6 +112,105 @@ function Dashboard() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sev, setSev] = useState<SevFilter>("all");
   const [liveTick, setLiveTick] = useState(0);
+
+  const [profile, setProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    setLoadingProfile(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!error && data) {
+        setProfile(data);
+      }
+    } catch (err) {
+      console.error("Failed to load profile details", err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (search.profile === "true") {
+      setShowProfileModal(true);
+      const timer = setTimeout(() => {
+        navigate({ to: "/dashboard", replace: true });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [search.profile, navigate]);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setEditDisplayName(profile.display_name || "");
+    }
+  }, [profile, showProfileModal]);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success("Password updated successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update password.");
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDisplayName.trim()) {
+      toast.error("Display name cannot be empty.");
+      return;
+    }
+    setUpdatingProfile(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: editDisplayName.trim(), updated_at: new Date().toISOString() })
+        .eq("id", user?.id);
+      if (error) throw error;
+      toast.success("Profile updated successfully!");
+      fetchProfile();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to update profile.");
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
 
   const [showTour, setShowTour] = useState(() => {
     if (typeof window !== "undefined") {
@@ -569,6 +675,216 @@ function Dashboard() {
         dismissTour={dismissTour}
         steps={TOUR_STEPS}
       />
+
+      {/* Profile Settings Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop (SOLID, dark, translucent overlay without backdrop blur) */}
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowProfileModal(false)} />
+
+          {/* Modal Container */}
+          <div className="relative z-10 w-full max-w-4xl rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user profile settings</div>
+                <h2 className="text-lg font-bold tracking-tight text-foreground">Settings & Account</h2>
+              </div>
+              <button 
+                onClick={() => setShowProfileModal(false)} 
+                className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Modal Body Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_1.3fr] gap-6 overflow-y-auto pr-1">
+              {/* Left Column: Identity & Credit Plan Analytics */}
+              <div className="space-y-5">
+                <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-4">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">User Identity</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-tr from-primary to-orange-400 font-sans font-bold text-xl text-primary-foreground shadow-lg shrink-0">
+                      {profile?.display_name ? profile.display_name.slice(0, 2).toUpperCase() : user?.email?.slice(0, 2).toUpperCase() || "US"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-base font-semibold text-foreground">
+                        {profile?.display_name || "Developer Profile"}
+                      </div>
+                      <div className="truncate text-xs text-text-muted mt-0.5">
+                        {user?.email}
+                      </div>
+                      <div className="text-[10px] text-text-faint font-mono mt-1">
+                        ID: {user?.id}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 border-t border-border/40 pt-3 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-text-muted">Date Joined:</span>
+                      <span className="text-foreground font-medium">
+                        {profile?.created_at 
+                          ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
+                          : "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3.5">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Status & Plan Matrix</h3>
+                  
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-text-muted">Subscription Plan:</span>
+                    <span className={`font-sans font-bold text-[10px] px-2 py-0.5 rounded border uppercase ${
+                      profile?.plan === "pro" 
+                        ? "bg-primary/10 border-primary/20 text-primary" 
+                        : "bg-bg-soft border-border text-text-muted"
+                    }`}>
+                      {profile?.plan || "free"} Plan
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs border-t border-border/10 pt-2.5">
+                    <span className="text-text-muted">Credits Balance:</span>
+                    <span className="font-mono font-bold text-sm text-orange-400 flex items-center gap-1">
+                      <Zap className="h-3.5 w-3.5 fill-orange-400/20" />
+                      {profile?.review_credits || 0} Credits
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs border-t border-border/10 pt-2.5">
+                    <span className="text-text-muted">Used Scans (Month):</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {profile?.reviews_used_this_month || 0} Reviews
+                    </span>
+                  </div>
+
+                  {profile?.plan !== "free" && profile?.subscription_expires_at ? (
+                    <div className="flex justify-between items-center text-xs border-t border-border/10 pt-2.5">
+                      <span className="text-text-muted">Plan Renewal/Expiry:</span>
+                      <span className="font-medium text-foreground">
+                        {new Date(profile.subscription_expires_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center text-xs border-t border-border/10 pt-2.5">
+                      <span className="text-text-muted">Expiry Schedule:</span>
+                      <span className="text-text-faint">Lifetime Free</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-start text-xs border-t border-border/10 pt-2.5">
+                    <span className="text-text-muted">Next Grant Reset:</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-primary">
+                        +{profile?.plan === "pro" ? "150" : "10"} Credits
+                      </span>
+                      <div className="text-[9px] text-text-faint mt-0.5">
+                        {profile?.last_reset_at 
+                          ? new Date(new Date(profile.last_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
+                          : "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Profile Edit & Change Password Form */}
+              <div className="space-y-5">
+                {/* Profile Edit Form */}
+                <form onSubmit={handleUpdateProfile} className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-4">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5 flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-primary" /> Edit Profile
+                  </h3>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-text-faint font-semibold uppercase">Email Address</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={user?.email || ""}
+                      className="w-full rounded border border-border bg-bg-soft/30 font-sans text-xs text-text-faint px-3 py-2 outline-none cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-text-faint font-semibold uppercase">Display Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editDisplayName}
+                      onChange={(e) => setEditDisplayName(e.target.value)}
+                      placeholder="e.g. Akshay Pratap Singh"
+                      className="w-full rounded border border-border bg-bg-soft font-sans text-xs text-foreground px-3 py-2 outline-none focus:border-primary/50"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={updatingProfile}
+                    className="w-full rounded bg-primary text-primary-foreground font-sans text-xs font-semibold px-4 py-2 hover:bg-primary/95 transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {updatingProfile ? "Saving Profile..." : "Save Profile Details"}
+                  </button>
+                </form>
+
+                {/* Change Password Form */}
+                <form onSubmit={handleUpdatePassword} className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-4">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5 flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5 text-primary animate-pulse" /> Change Password
+                  </h3>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-text-faint font-semibold uppercase">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Minimum 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded border border-border bg-bg-soft font-sans text-xs text-foreground px-3 py-2 outline-none focus:border-primary/50"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-text-faint font-semibold uppercase">Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full rounded border border-border bg-bg-soft font-sans text-xs text-foreground px-3 py-2 outline-none focus:border-primary/50"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={updatingPassword}
+                    className="w-full rounded bg-primary text-primary-foreground font-sans text-xs font-semibold px-4 py-2 hover:bg-primary/95 transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {updatingPassword ? "Updating Password..." : "Change Account Password"}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end border-t border-border pt-4 mt-5">
+              <button
+                onClick={() => setShowProfileModal(false)}
+                className="rounded-lg bg-bg-soft border border-border px-4 py-2 font-sans text-xs font-semibold text-text hover:text-foreground hover:bg-bg-soft/80 transition cursor-pointer"
+              >
+                Close Settings
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

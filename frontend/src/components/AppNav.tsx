@@ -276,6 +276,15 @@ export function AppNav() {
 
                         <Link 
                           to="/dashboard"
+                          search={{ profile: "true" }}
+                          onClick={() => setShowDropdown(false)}
+                          className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-2 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
+                        >
+                          <UserIcon className="h-3.5 w-3.5 text-text-muted" /> Settings & Profile
+                        </Link>
+
+                        <Link 
+                          to="/dashboard"
                           onClick={() => setShowDropdown(false)}
                           className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-2 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
                         >
