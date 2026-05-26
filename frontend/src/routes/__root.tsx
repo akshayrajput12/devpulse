@@ -6,7 +6,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { ThemeProvider, useTheme } from "@/lib/theme.js";
 
 function NotFoundComponent() {

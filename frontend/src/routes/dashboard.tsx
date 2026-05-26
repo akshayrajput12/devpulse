@@ -127,7 +127,11 @@ function Dashboard() {
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get("credits") === "true") {
       setShowCreditModal(true);
-      navigate({ to: "/dashboard", replace: true });
+      // Clean URL without adding history entry after a tiny timeout to avoid React transition collision
+      const timer = setTimeout(() => {
+        navigate({ to: "/dashboard", replace: true });
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [location, navigate]);
 
