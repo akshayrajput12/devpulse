@@ -43,7 +43,7 @@ const DEMO_FINDINGS = [
   { sev: "low",  file: "lib/notify.ts:23", title: "Unhandled promise — Slack call lost", category: "Bug", conf: 82 },
 ];
 
-const LOGOS = ["Vercel", "Stripe", "Notion", "Linear", "Figma", "Shopify", "Atlassian", "Replicate", "Cal.com"];
+const LOGOS = ["Supabase", "Resend", "Clerk", "Trigger.dev", "Dub.co", "Railway", "Neon", "Inngest", "Loops", "Fly.io", "Biome"];
 
 function Container({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`mx-auto max-w-[1240px] px-6 ${className}`}>{children}</div>;
@@ -125,7 +125,7 @@ function HeroStickyContent() {
       <ContainerInset className={`max-h-[420px] w-full max-w-5xl rounded-xl border transition-all duration-500 overflow-hidden mt-6 ${
         isFullSize 
           ? "border-primary shadow-[0_0_50px_rgba(190,242,100,0.25)]" 
-          : "border-border/40 shadow-xl"
+          : "border-primary/20 shadow-xl"
       }`}>
         <HeroVideo
           ref={videoRef}
