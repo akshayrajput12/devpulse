@@ -29,28 +29,59 @@ export function OnboardingTour({
 }: OnboardingTourProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
+  // Hook 1: Scroll target element into view EXACTLY ONCE per step change (deferred for DOM mount)
+  useEffect(() => {
+    if (!showTour) return;
+    const step = steps[tourStep - 1];
+    if (!step) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(step.targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [showTour, tourStep, activeTab, steps]);
+
+  // Hook 2: Dynamic Coordinate Polling and event tracking (polls every 100ms)
   useEffect(() => {
     if (!showTour) {
       setTargetRect(null);
       return;
     }
+
     const updateRect = () => {
       const step = steps[tourStep - 1];
       if (!step) return;
       const el = document.getElementById(step.targetId);
       if (el) {
-        setTargetRect(el.getBoundingClientRect());
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        const rect = el.getBoundingClientRect();
+        // Only update if dimensions actually changed to prevent unnecessary re-renders
+        setTargetRect(prev => {
+          if (!prev || 
+              prev.top !== rect.top || 
+              prev.left !== rect.left || 
+              prev.width !== rect.width || 
+              prev.height !== rect.height) {
+            return rect;
+          }
+          return prev;
+        });
       } else {
         setTargetRect(null);
       }
     };
 
-    const timer = setTimeout(updateRect, 250);
+    updateRect(); // Initial immediate calculation
+    
+    const intervalId = setInterval(updateRect, 100);
     window.addEventListener("resize", updateRect);
     window.addEventListener("scroll", updateRect, { passive: true });
+
     return () => {
-      clearTimeout(timer);
+      clearInterval(intervalId);
       window.removeEventListener("resize", updateRect);
       window.removeEventListener("scroll", updateRect);
     };
@@ -119,8 +150,8 @@ export function OnboardingTour({
 
   return (
     <>
-      {/* Backdrop Overlay - Pure semi-transparent dark overlay to keep the focused target sharp and unblurred */}
-      <div className="fixed inset-0 z-[100] bg-black/35 transition-all dark:bg-black/55" />
+      {/* Backdrop Overlay - Click-through & scroll-through backdrop overlay */}
+      <div className="fixed inset-0 z-[100] bg-black/35 transition-all dark:bg-black/55 pointer-events-none" />
 
       {/* Glowing Spotlight Focus Ring */}
       {targetRect && (
@@ -137,7 +168,7 @@ export function OnboardingTour({
 
       {/* Floating Explanatory Popover Card */}
       <div 
-        className="fixed z-[102] w-[320px] rounded-2xl border border-primary/30 bg-bg-elev p-5 shadow-2xl font-sans animate-in zoom-in-95 duration-200 text-foreground"
+        className="fixed z-[102] w-[320px] rounded-2xl border border-primary/30 bg-bg-elev p-5 shadow-2xl font-sans animate-in zoom-in-95 duration-200 text-foreground pointer-events-auto"
         style={{
           top: popoverPos.top,
           left: popoverPos.left,

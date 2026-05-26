@@ -89,28 +89,28 @@ export function AppNav() {
           {loading ? null : user ? (
             <div className="flex items-center gap-4">
               {/* Credit Balance Capsule with Tooltip */}
-              <div 
+              <div
                 className="relative cursor-pointer"
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 onClick={() => setShowTooltip(prev => !prev)}
               >
-                <button 
+                <button
                   className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-3 py-1 font-mono text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10 cursor-pointer"
                   title="View detailed credit ledger"
                 >
                   <Zap className="h-3.5 w-3.5 text-orange-400 fill-orange-400/20" />
                   <span>{profile ? `${profile.review_credits} credits` : "loading..."}</span>
                 </button>
-                
-                 {/* Custom Gorgeous Dropdown Tooltip */}
+
+                {/* Custom Gorgeous Dropdown Tooltip */}
                 {showTooltip && (
                   <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-bg-elev p-4 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150 z-50 font-sans">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
                       <span className="text-xs font-semibold uppercase tracking-wider text-text-faint font-sans">Recent Credits</span>
                       <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-sans font-semibold text-primary capitalize">{profile?.plan || "free"} Plan</span>
                     </div>
-                    
+
                     {/* Latest 3 credits usage logs */}
                     <div className="space-y-2 mb-3.5 mt-1.5">
                       {loadingReviews ? (
@@ -144,7 +144,7 @@ export function AppNav() {
               </div>
 
               {/* User Profile Hover Card (Hover-Triggered) */}
-              <div 
+              <div
                 className="relative py-1"
                 onMouseEnter={() => setShowDropdown(true)}
                 onMouseLeave={() => setShowDropdown(false)}
@@ -155,9 +155,9 @@ export function AppNav() {
                   className="flex items-center gap-2 rounded-full border border-border bg-bg-soft/40 p-0.5 pr-2.5 transition hover:bg-bg-soft hover:border-text-muted cursor-pointer"
                 >
                   {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt="profile" 
+                    <img
+                      src={profile.avatar_url}
+                      alt="profile"
                       className="h-7 w-7 rounded-full object-cover border border-border-faint"
                     />
                   ) : (
@@ -174,7 +174,7 @@ export function AppNav() {
                 {showDropdown && (
                   <div className="absolute right-0 top-full pt-1.5 w-80 z-50 font-sans">
                     <div className="rounded-xl border border-border bg-bg-elev p-4.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150 relative overflow-hidden group">
-                      
+
                       {/* Ambient light glow inside dropdown background */}
                       <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
@@ -182,9 +182,9 @@ export function AppNav() {
                       <div className="flex items-center gap-3 pb-3.5 mb-3 border-b border-border/40 relative z-10">
                         {profile?.avatar_url ? (
                           <div className="relative shrink-0">
-                            <img 
-                              src={profile.avatar_url} 
-                              alt="profile" 
+                            <img
+                              src={profile.avatar_url}
+                              alt="profile"
                               className="h-10 w-10 rounded-full object-cover border border-primary/30"
                             />
                             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-bg-elev dp-pulse" />
@@ -212,9 +212,8 @@ export function AppNav() {
                         {/* Box 1: Plan Level */}
                         <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
                           <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Tier Plan</span>
-                          <span className={`text-[11px] font-bold uppercase truncate mt-1 ${
-                            profile?.plan === "pro" ? "text-primary" : "text-text-muted"
-                          }`}>
+                          <span className={`text-[11px] font-bold uppercase truncate mt-1 ${profile?.plan === "pro" ? "text-primary" : "text-text-muted"
+                            }`}>
                             {profile?.plan || "free"}
                           </span>
                         </div>
@@ -229,23 +228,17 @@ export function AppNav() {
                           </span>
                         </div>
 
-                        {/* Box 3: Reviews Used */}
-                        <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
-                          <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Scans Used</span>
-                          <span className="text-[11px] font-mono font-bold text-foreground mt-1">
-                            {profile?.reviews_used_this_month ?? 0} reviews
-                          </span>
-                        </div>
+
 
                         {/* Box 4: Reset Schedule */}
                         <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
                           <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Next Grant</span>
                           <span className="text-[10px] font-sans font-medium text-foreground mt-1 truncate">
-                            {profile?.last_reset_at 
-                              ? new Date(new Date(profile.last_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, { 
-                                  month: "short", 
-                                  day: "numeric"
-                                })
+                            {profile?.last_reset_at
+                              ? new Date(new Date(profile.last_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric"
+                              })
                               : "N/A"}
                           </span>
                         </div>
@@ -271,8 +264,8 @@ export function AppNav() {
                       <div className="space-y-1.5 relative z-10">
                         {/* Admin Dashboard CTA - Only visible to admin users */}
                         {profile?.is_admin && (
-                          <Link 
-                            to="/admin" 
+                          <Link
+                            to="/admin"
                             onClick={() => setShowDropdown(false)}
                             className="flex w-full items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-1.5 text-xs font-sans font-medium text-red-400 transition hover:bg-red-500/10 cursor-pointer"
                           >
@@ -282,7 +275,7 @@ export function AppNav() {
                           </Link>
                         )}
 
-                        <Link 
+                        <Link
                           to="/dashboard"
                           search={{ profile: "true" }}
                           onClick={() => setShowDropdown(false)}
@@ -291,7 +284,7 @@ export function AppNav() {
                           <UserIcon className="h-3.5 w-3.5 text-text-muted" /> Settings & Profile
                         </Link>
 
-                        <Link 
+                        <Link
                           to="/dashboard"
                           onClick={() => setShowDropdown(false)}
                           className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-1.5 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
