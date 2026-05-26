@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Database, GitPullRequest, Plus, Search, RotateCw, Trash2, HelpCircle, Github, ChevronLeft, ChevronRight, Check, Sparkles, Clock, Activity, ShieldAlert } from "lucide-react";
+import { ArrowRight, Database, GitPullRequest, Plus, Search, RotateCw, Trash2, HelpCircle, Github, ChevronLeft, ChevronRight, Check, Sparkles, Clock, Activity, ShieldAlert, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppNav } from "@/components/AppNav";
 import { useAuth } from "@/lib/auth";
 import { GithubBrowser } from "@/components/GithubBrowser";
 import { toast } from "sonner";
+import { DevPulseLoader } from "@/components/DevPulseLoader";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -19,6 +20,7 @@ type Review = {
   status: string;
   health_score: number | null;
   created_at: string;
+  review_type?: string | null;
 };
 
 type Finding = { review_id: string; severity: string };
@@ -31,6 +33,7 @@ const SEV_ORDER: Record<string, number> = { critical: 4, high: 3, medium: 2, low
 function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<"reviews" | "github" | "api">("reviews");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [findingsBySev, setFindingsBySev] = useState<Record<string, { critical: number; high: number; medium: number; low: number; top: string }>>({});
@@ -39,6 +42,18 @@ function Dashboard() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sev, setSev] = useState<SevFilter>("all");
   const [liveTick, setLiveTick] = useState(0);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [profile, setProfile] = useState<{
+    id: string;
+    email: string | null;
+    plan: string;
+    review_credits: number;
+    last_reset_at: string;
+    subscription_expires_at: string | null;
+    is_admin: boolean;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null>(null);
 
   const [showTour, setShowTour] = useState(() => {
     if (typeof window !== "undefined") {
@@ -87,6 +102,34 @@ function Dashboard() {
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { getUserProfileData } = await import("@/lib/reviews.functions");
+        const data = await getUserProfileData({ data: { access_token: session.access_token } });
+        if (active) setProfile(data as any);
+      } catch (err) {
+        console.error("Failed to load profile credits", err);
+      }
+    })();
+    return () => { active = false; };
+  }, [user]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("credits") === "true") {
+      setShowCreditModal(true);
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     if (!user) return;
@@ -636,6 +679,110 @@ function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Credit Allocation Ledger Dialog Modal */}
+      {showCreditModal && profile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowCreditModal(false)} />
+          
+          <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] font-sans animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ credit ledger</div>
+                <h2 className="text-lg font-bold tracking-tight text-foreground">My Credit Usage</h2>
+              </div>
+              <button 
+                onClick={() => setShowCreditModal(false)} 
+                className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Credit Status Summary Cards */}
+            <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center animate-in slide-in-from-left duration-200">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Balance</span>
+                <span className="text-3xl font-medium text-orange-400 tracking-tightest font-sans mt-1">
+                  {profile.review_credits} <span className="text-xs text-text-muted">credits left</span>
+                </span>
+              </div>
+              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center animate-in slide-in-from-right duration-200">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Current Plan</span>
+                <span className="text-xl font-bold uppercase text-primary mt-1">
+                  {profile.plan} plan
+                </span>
+              </div>
+            </div>
+
+            {/* Scrollable ledger logs list */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-3 text-[10px] uppercase font-mono text-text-muted">
+                <span>Credit transaction history</span>
+                <span>{reviews.length} logs</span>
+              </div>
+
+              <div className="flex-1 border border-border rounded-xl bg-bg-soft/10 overflow-y-auto divide-y divide-border/30">
+                {loadingR ? (
+                  <div className="h-32 flex items-center justify-center">
+                    <DevPulseLoader />
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-text-muted">
+                    No transactions found. Scan code to use credits.
+                  </div>
+                ) : (
+                  reviews.map((rev) => {
+                    let cost = 1;
+                    let desc = "PR Review Scanned";
+                    if (rev.review_type === "folder_analysis") {
+                      cost = 2;
+                      desc = "Folder Structure Audit";
+                    } else if (rev.review_type === "codebase_audit") {
+                      cost = 3;
+                      desc = "Deep Codebase Audit";
+                    } else if (rev.review_type === "api_analysis") {
+                      cost = 3;
+                      desc = "API & Backend Analyser";
+                    }
+                    return (
+                      <div key={rev.id} className="p-3.5 flex justify-between items-center gap-4 hover:bg-bg-soft/20 transition-colors">
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-foreground truncate max-w-[340px]">
+                            {rev.pr_title || "Manual Review"}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[10px] text-text-faint font-mono">
+                            <span>{desc}</span>
+                            <span>•</span>
+                            <span>{new Date(rev.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className="font-mono text-xs font-bold text-red-400">
+                            -{cost} credits
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-5 border-t border-border pt-4 flex justify-end">
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="rounded-lg bg-primary px-5 py-2 text-xs font-mono font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-px cursor-pointer"
+              >
+                Close Ledger
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
