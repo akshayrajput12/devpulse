@@ -150,6 +150,7 @@ export function AppNav() {
                 onMouseLeave={() => setShowDropdown(false)}
               >
                 <button
+                  id="tour-profile-menu"
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center gap-2 rounded-full border border-border bg-bg-soft/40 p-0.5 pr-2.5 transition hover:bg-bg-soft hover:border-text-muted cursor-pointer"
                 >
@@ -172,19 +173,28 @@ export function AppNav() {
                 {/* Dropdown Menu Overlay */}
                 {showDropdown && (
                   <div className="absolute right-0 top-full pt-1.5 w-80 z-50 font-sans">
-                    <div className="rounded-xl border border-border bg-bg-elev p-5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="rounded-xl border border-border bg-bg-elev p-4.5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150 relative overflow-hidden group">
                       
+                      {/* Ambient light glow inside dropdown background */}
+                      <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
                       {/* User Identity Header */}
-                      <div className="flex items-center gap-3 border-b border-border/40 pb-4 mb-4">
+                      <div className="flex items-center gap-3 pb-3.5 mb-3 border-b border-border/40 relative z-10">
                         {profile?.avatar_url ? (
-                          <img 
-                            src={profile.avatar_url} 
-                            alt="profile" 
-                            className="h-10 w-10 rounded-full object-cover border border-border-faint"
-                          />
+                          <div className="relative shrink-0">
+                            <img 
+                              src={profile.avatar_url} 
+                              alt="profile" 
+                              className="h-10 w-10 rounded-full object-cover border border-primary/30"
+                            />
+                            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-bg-elev dp-pulse" />
+                          </div>
                         ) : (
-                          <div className="grid h-10 w-10 place-items-center rounded-full bg-border font-sans font-medium text-sm text-foreground shrink-0">
-                            {initials}
+                          <div className="relative shrink-0">
+                            <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-tr from-primary to-orange-400 font-sans font-medium text-sm text-primary-foreground">
+                              {initials}
+                            </div>
+                            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-bg-elev dp-pulse" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
@@ -197,76 +207,74 @@ export function AppNav() {
                         </div>
                       </div>
 
-                      {/* Premium Status Matrix Panel (Prominent top section) */}
-                      <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
-                        <div className="flex items-center justify-between border-b border-primary/10 pb-2 mb-2">
-                          <span className="font-sans text-[10px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1">
-                            <Sparkles className="h-3 w-3 text-primary animate-pulse" /> Status Matrix
-                          </span>
-                          <span className={`rounded-sm border px-2 py-0.5 text-[9px] font-sans font-bold uppercase leading-none ${
-                            profile?.plan === "pro" 
-                              ? "border-primary/40 text-primary bg-primary/10" 
-                              : profile?.plan === "team"
-                                ? "border-orange-500/40 text-orange-400 bg-orange-500/10"
-                                : "border-border text-text-faint bg-bg-soft/10"
+                      {/* Redesigned 2x2 Premium Status Dashboard Grid */}
+                      <div className="grid grid-cols-2 gap-2.5 mb-4 relative z-10 font-sans">
+                        {/* Box 1: Plan Level */}
+                        <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
+                          <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Tier Plan</span>
+                          <span className={`text-[11px] font-bold uppercase truncate mt-1 ${
+                            profile?.plan === "pro" ? "text-primary" : "text-text-muted"
                           }`}>
-                            {profile?.plan || "free"} Plan
+                            {profile?.plan || "free"}
                           </span>
                         </div>
-                        
-                        <div className="space-y-2 font-sans text-[11px] text-text-muted">
-                          {/* Expiration Countdown */}
-                          {profile?.plan !== "free" && profile?.subscription_expires_at ? (
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-text-faint">Subscription Ends:</span>
-                              <span className="font-medium text-foreground">
-                                {new Date(profile.subscription_expires_at).toLocaleDateString(undefined, { 
-                                  month: "short", 
-                                  day: "numeric" 
-                                })}
-                                {(() => {
-                                  const days = Math.ceil((new Date(profile.subscription_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                                  return days > 0 ? (
-                                    <span className="ml-1.5 text-[9px] px-1.5 py-0.25 rounded-sm bg-primary/20 text-primary font-bold">{days}d left</span>
-                                  ) : null;
-                                })()}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-text-faint">Access Level:</span>
-                              <span className="font-medium text-text-faint">Lifetime Free Tier</span>
-                            </div>
-                          )}
 
-                          {/* Next Credit Grant Info */}
-                          <div className="flex items-start justify-between gap-2 border-t border-primary/10 pt-2 mt-2">
-                            <span className="text-text-faint">Next Grant:</span>
-                            <div className="text-right">
-                              <span className="font-semibold text-primary font-sans">+{profile?.plan === "pro" ? "150" : "10"} credits</span>
-                              <div className="text-[9px] text-text-faint font-sans mt-0.5">
-                                Auto-reset on {
-                                  profile?.last_reset_at 
-                                    ? new Date(new Date(profile.last_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, { 
-                                        month: "short", 
-                                        day: "numeric"
-                                      })
-                                    : "N/A"
-                                }
-                              </div>
-                            </div>
-                          </div>
+                        {/* Box 2: Credits Balance */}
+                        <div className="rounded-lg border border-orange-500/20 bg-orange-500/[0.02] p-2.5 flex flex-col justify-between min-h-[60px]">
+                          <span className="text-[9px] uppercase tracking-wider text-orange-400/80 font-semibold flex items-center gap-0.5">
+                            <Zap className="h-2.5 w-2.5 fill-orange-400/20 text-orange-400" /> Balance
+                          </span>
+                          <span className="text-[12px] font-mono font-bold text-orange-400 mt-1">
+                            {profile?.review_credits ?? 0} cr
+                          </span>
+                        </div>
+
+                        {/* Box 3: Reviews Used */}
+                        <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
+                          <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Scans Used</span>
+                          <span className="text-[11px] font-mono font-bold text-foreground mt-1">
+                            {profile?.reviews_used_this_month ?? 0} reviews
+                          </span>
+                        </div>
+
+                        {/* Box 4: Reset Schedule */}
+                        <div className="rounded-lg border border-border bg-bg-soft/20 p-2.5 flex flex-col justify-between min-h-[60px]">
+                          <span className="text-[9px] uppercase tracking-wider text-text-faint font-semibold">Next Grant</span>
+                          <span className="text-[10px] font-sans font-medium text-foreground mt-1 truncate">
+                            {profile?.last_reset_at 
+                              ? new Date(new Date(profile.last_reset_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, { 
+                                  month: "short", 
+                                  day: "numeric"
+                                })
+                              : "N/A"}
+                          </span>
                         </div>
                       </div>
 
+                      {/* Expiry countdown block for paid users */}
+                      {profile?.plan !== "free" && profile?.subscription_expires_at && (
+                        <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 flex items-center justify-between text-[10px] relative z-10">
+                          <span className="text-text-faint">Subscription expiry:</span>
+                          <span className="font-semibold text-primary font-sans">
+                            {new Date(profile.subscription_expires_at).toLocaleDateString()}
+                            {(() => {
+                              const days = Math.ceil((new Date(profile.subscription_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                              return days > 0 ? (
+                                <span className="ml-1.5 px-1 py-0.25 rounded bg-primary/25 text-primary text-[8px] font-bold">{days}d left</span>
+                              ) : null;
+                            })()}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Navigation Options & CTAs */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 relative z-10">
                         {/* Admin Dashboard CTA - Only visible to admin users */}
                         {profile?.is_admin && (
                           <Link 
                             to="/admin" 
                             onClick={() => setShowDropdown(false)}
-                            className="flex w-full items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3.5 py-2 text-xs font-sans font-medium text-red-400 transition hover:bg-red-500/10 cursor-pointer"
+                            className="flex w-full items-center justify-between gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-1.5 text-xs font-sans font-medium text-red-400 transition hover:bg-red-500/10 cursor-pointer"
                           >
                             <span className="flex items-center gap-1.5">
                               <ShieldAlert className="h-3.5 w-3.5 text-red-400" /> Root Admin Manager
@@ -278,7 +286,7 @@ export function AppNav() {
                           to="/dashboard"
                           search={{ profile: "true" }}
                           onClick={() => setShowDropdown(false)}
-                          className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-2 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
+                          className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3 py-1.5 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
                         >
                           <UserIcon className="h-3.5 w-3.5 text-text-muted" /> Settings & Profile
                         </Link>
@@ -286,7 +294,7 @@ export function AppNav() {
                         <Link 
                           to="/dashboard"
                           onClick={() => setShowDropdown(false)}
-                          className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-2 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
+                          className="flex w-full items-center gap-2 rounded-lg border border-border bg-bg-soft/20 hover:bg-bg-soft/60 px-3.5 py-1.5 text-xs font-sans font-medium text-text hover:text-foreground transition cursor-pointer"
                         >
                           <LayoutDashboard className="h-3.5 w-3.5 text-text-muted" /> User Dashboard
                         </Link>
@@ -296,7 +304,7 @@ export function AppNav() {
                             setShowDropdown(false);
                             await signOut();
                           }}
-                          className="flex w-full items-center gap-2 rounded-lg border border-transparent hover:bg-red-500/5 hover:text-red-400 px-3.5 py-2 text-xs font-sans font-medium text-text-muted transition cursor-pointer"
+                          className="flex w-full items-center gap-2 rounded-lg border border-transparent hover:bg-red-500/5 hover:text-red-400 px-3.5 py-1.5 text-xs font-sans font-medium text-text-muted transition cursor-pointer"
                         >
                           <LogOut className="h-3.5 w-3.5" /> Sign out
                         </button>

@@ -88,6 +88,12 @@ const TOUR_STEPS = [
     title: "10. Visual Folder Modularity Scans",
     content: "Run structural folder audits. DevPulse analyzes your package layer structures, highlights circular dependencies, and generates modular migration checklists.\n\n🖱️ Action on Click: Directs you to the Folder Analysis dashboard to scan folder couplings and view refactoring steps.",
     tab: "reviews"
+  },
+  {
+    targetId: "tour-profile-menu",
+    title: "11. Account Settings & Credit Ledger",
+    content: "Hover over your profile to see plan levels and credit resets. Click the 'Settings & Profile' option inside to view details, update your display name, browse your transaction ledger, and change your password.\n\n🖱️ Action on Click: Highlights the account menu dropdown to navigate to settings.",
+    tab: "reviews"
   }
 ];
 
@@ -715,9 +721,6 @@ function Dashboard() {
                       <div className="truncate text-xs text-text-muted mt-0.5">
                         {user?.email}
                       </div>
-                      <div className="text-[10px] text-text-faint font-mono mt-1">
-                        ID: {user?.id}
-                      </div>
                     </div>
                   </div>
 
@@ -788,6 +791,43 @@ function Dashboard() {
                           : "N/A"}
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Credit Transaction Ledger Card */}
+                <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5 flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-primary" /> Credit Ledger
+                  </h3>
+                  
+                  <div className="overflow-y-auto max-h-[160px] divide-y divide-border/30 pr-1 space-y-2">
+                    {reviews.length === 0 ? (
+                      <div className="text-center py-4 text-xs text-text-faint">
+                        No transactions recorded.
+                      </div>
+                    ) : (
+                      reviews.map((rev) => {
+                        const cost = rev.review_type === "folder_analysis" ? 2 : (rev.review_type === "codebase_audit" || rev.review_type === "api_analysis") ? 3 : 1;
+                        const formattedType = rev.review_type === "folder_analysis" ? "Modularity Scan" : rev.review_type === "codebase_audit" ? "Codebase Audit" : rev.review_type === "api_analysis" ? "API Audit" : "PR Automated Review";
+                        return (
+                          <div key={rev.id} className="pt-2 first:pt-0 flex items-start justify-between gap-3 text-xs">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-foreground truncate" title={rev.pr_title || rev.pr_url}>
+                                {rev.pr_title || "Manual Scan"}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[9px] text-text-faint mt-0.5 font-mono">
+                                <span>{formattedType}</span>
+                                <span>•</span>
+                                <span>{new Date(rev.created_at).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <span className="font-mono text-[10px] font-bold text-orange-400 shrink-0">
+                              -{cost} cr
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
