@@ -360,10 +360,10 @@ function AdminBlog() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ terminal root / rich blog engine</div>
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1">Blog Post Manager</h1>
+          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ blog</div>
+          <h1 className="text-3xl font-extrabold tracking-tight mt-1">Manage Blog Posts</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed">
-            Write developer-focused blog articles, update markdown/html formats, and publish updates dynamically.
+            Write blog articles, update content, and publish them to your website.
           </p>
         </div>
         {!showForm && (
@@ -371,7 +371,7 @@ function AdminBlog() {
             onClick={handleCreateNew}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-mono font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-px"
           >
-            <Plus className="h-4 w-4" /> Create Article
+            <Plus className="h-4 w-4" /> New Article
           </button>
         )}
       </div>
@@ -381,7 +381,7 @@ function AdminBlog() {
         <div className="rounded-xl border border-border bg-bg-elev p-6 shadow-[0_0_50px_-25px_rgba(0,0,0,0.3)]">
           <div className="flex items-center justify-between border-b border-border/60 pb-4 mb-6">
             <h2 className="text-base font-semibold flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" /> {id ? "Update Blog Draft" : "Compose New Article"}
+              <FileText className="h-4 w-4 text-primary" /> {id ? "Edit Article" : "New Article"}
             </h2>
             <button
               onClick={() => setShowForm(false)}
@@ -410,7 +410,7 @@ function AdminBlog() {
 
               <div className="space-y-1">
                 <label className="font-mono text-[10px] uppercase text-text-muted font-bold">
-                  URL Slug <span className="text-red-400">*</span>
+                  URL path (slug) <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -427,12 +427,12 @@ function AdminBlog() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="font-mono text-[10px] uppercase text-text-muted font-bold">
-                  Brief Summary (Excerpt) <span className="text-red-400">*</span>
+                  Summary <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   required
                   rows={2}
-                  placeholder="Provide a search-optimized summary of this post..."
+                  placeholder="Provide a short summary of this post..."
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
                   className="w-full rounded border border-border bg-bg-soft/40 px-3 py-2 text-xs focus:border-primary/50 focus:outline-none"
@@ -456,7 +456,7 @@ function AdminBlog() {
             {/* Editor block */}
             <div className="space-y-1">
               <label className="font-mono text-[10px] uppercase text-text-muted font-bold">
-                Article Body Content <span className="text-red-400">*</span>
+                Content <span className="text-red-400">*</span>
               </label>
               <CKEditorTextarea value={content} onChange={setContent} />
             </div>
@@ -473,13 +473,13 @@ function AdminBlog() {
                 }`}
               >
                 <Globe className="h-3.5 w-3.5" />
-                {published ? "Published (Live)" : "Draft Mode"}
+                {published ? "Published" : "Draft"}
               </button>
 
               <div className="text-[10px] font-mono text-text-muted leading-tight">
                 {published
-                  ? "This post will be instantly visible at /blog to all users."
-                  : "This post will remain private to administrator workspaces."}
+                  ? "This post will show on the blog page immediately."
+                  : "This post will be saved as a draft."}
               </div>
             </div>
 
@@ -513,13 +513,13 @@ function AdminBlog() {
               <BookOpen className="h-10 w-10 text-text-muted/40 mb-4" />
               <h3 className="text-sm font-semibold mb-1">No articles found</h3>
               <p className="text-xs text-text-muted mb-4 max-w-[28ch]">
-                Create your first rich-text article to start DevPulse's public knowledge base.
+                Create your first article to start writing.
               </p>
               <button
                 onClick={handleCreateNew}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-mono font-bold text-primary-foreground"
               >
-                Create First Post
+                New Article
               </button>
             </div>
           ) : (

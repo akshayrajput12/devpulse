@@ -95,8 +95,8 @@ function UserDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user registry diagnostics</div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground">{user.display_name || "Workspace Profile"}</h2>
+            <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user details</div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">{user.display_name || "User Details"}</h2>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer">
             <X className="h-4.5 w-4.5" />
@@ -109,20 +109,20 @@ function UserDetailModal({
           {/* Left Column: Actions and settings */}
           <div className="space-y-5">
             <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3.5">
-              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Profile Properties</h3>
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Account Details</h3>
               
               <div>
-                <div className="text-[10px] text-text-faint font-semibold uppercase">User Email</div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">Email</div>
                 <div className="text-xs text-foreground font-mono mt-0.5 select-all">{user.email || "No email"}</div>
               </div>
 
               <div>
-                <div className="text-[10px] text-text-faint font-semibold uppercase">Database ID</div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">User ID</div>
                 <div className="text-[10px] text-text-faint font-mono mt-0.5 select-all">{user.id}</div>
               </div>
 
               <div>
-                <div className="text-[10px] text-text-faint font-semibold uppercase">Date Registered</div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">Date Joined</div>
                 <div className="text-xs text-foreground font-sans mt-0.5">
                   {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                 </div>
@@ -130,11 +130,11 @@ function UserDetailModal({
             </div>
 
             <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-4">
-              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">System Suspension & controls</h3>
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Plan & Suspension</h3>
               
               {/* Plan controls */}
               <div className="space-y-1.5">
-                <label className="text-[10px] text-text-faint font-semibold uppercase">Pricing Plan Tier</label>
+                <label className="text-[10px] text-text-faint font-semibold uppercase">Pricing Plan</label>
                 <select
                   value={user.plan}
                   onChange={(e) => onUpdatePlan(user.id, e.target.value)}
@@ -177,21 +177,21 @@ function UserDetailModal({
             </div>
 
             <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3">
-              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Integration Parameters</h3>
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Status Details</h3>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-muted">GitHub Token:</span>
+                <span className="text-text-muted">GitHub connected:</span>
                 <span className={`font-mono font-semibold px-2 py-0.5 rounded text-[10px] ${
                   profileData?.github_access_token ? "bg-primary/10 text-primary border border-primary/20" : "bg-bg-soft text-text-faint"
                 }`}>
-                  {profileData?.github_access_token ? "CONNECTED" : "DISCONNECTED"}
+                  {profileData?.github_access_token ? "Yes" : "No"}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-text-muted">Standalone Password:</span>
+                <span className="text-text-muted">Password Setup:</span>
                 <span className={`font-mono font-semibold px-2 py-0.5 rounded text-[10px] ${
                   user.has_password ? "bg-primary/10 text-primary border border-primary/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
                 }`}>
-                  {user.has_password ? "CONFIGURED" : "MISSING (REQUIRED)"}
+                  {user.has_password ? "Done" : "Not Configured"}
                 </span>
               </div>
             </div>
@@ -200,9 +200,9 @@ function UserDetailModal({
           {/* Right Column: User review history */}
           <div className="flex flex-col h-full overflow-hidden min-h-[300px]">
             <div className="flex items-center justify-between mb-3.5">
-              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted">Code Review History</h3>
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted">Review History</h3>
               <span className="rounded bg-bg-soft border border-border px-2 py-0.5 font-mono text-[10px] text-text-muted">
-                {reviews.length} total reviews
+                {reviews.length} reviews
               </span>
             </div>
 
@@ -214,7 +214,7 @@ function UserDetailModal({
               ) : reviews.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-12 font-sans">
                   <GitPullRequest className="h-8 w-8 text-text-faint mb-2" />
-                  <p className="text-xs text-text-muted">This developer has not processed any code reviews.</p>
+                  <p className="text-xs text-text-muted">This user hasn't run any reviews yet.</p>
                 </div>
               ) : (
                 <div className="overflow-y-auto max-h-[350px] divide-y divide-border/30">
@@ -239,7 +239,7 @@ function UserDetailModal({
                         <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-semibold ${
                           rev.status === "complete" ? "bg-emerald-500/10 text-emerald-400" : rev.status === "failed" ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"
                         }`}>
-                          {rev.status}
+                          {rev.status === "complete" ? "Done" : rev.status === "failed" ? "Failed" : rev.status === "processing" ? "Scanning" : rev.status}
                         </span>
                       </div>
                     </div>
@@ -400,10 +400,10 @@ function AdminUsers() {
     <div className="space-y-6 font-sans">
       {/* Title */}
       <div>
-        <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ terminal root / database user registry</div>
-        <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">User Account Management</h1>
+        <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ users</div>
+        <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">Manage Users</h1>
         <p className="text-xs text-text-muted mt-1 leading-relaxed">
-          Manage plans, override credit quotas, toggle admin terminal access, suspend users, or purge account registries.
+          Manage user plans, review credits, admin roles, and account settings.
         </p>
       </div>
 
@@ -420,7 +420,7 @@ function AdminUsers() {
           />
         </div>
         <div className="font-sans text-[10px] text-text-muted">
-          Active users: <span className="text-primary font-semibold">{users.length}</span>
+          Total users: <span className="text-primary font-semibold">{users.length}</span>
         </div>
       </div>
 
@@ -435,19 +435,19 @@ function AdminUsers() {
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b border-border/60 bg-bg-soft/50 font-sans text-[10px] text-text-muted">
-                  <th className="px-5 py-3 font-medium">User Profile</th>
-                  <th className="px-5 py-3 font-medium">Subscription Tier</th>
-                  <th className="px-5 py-3 font-medium">Credits Quota</th>
-                  <th className="px-5 py-3 font-medium">Status Check</th>
-                  <th className="px-5 py-3 font-medium">Terminal Role</th>
-                  <th className="px-5 py-3 font-medium text-right">System Actions</th>
+                  <th className="px-5 py-3 font-medium">User</th>
+                  <th className="px-5 py-3 font-medium">Plan</th>
+                  <th className="px-5 py-3 font-medium">Credits</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium">Admin</th>
+                  <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30 font-sans">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center text-text-muted font-mono">
-                      No matching user records found in the registry.
+                    <td colSpan={6} className="px-5 py-8 text-center text-text-muted font-sans">
+                      No users found.
                     </td>
                   </tr>
                 ) : (
@@ -457,7 +457,7 @@ function AdminUsers() {
                       {/* Name/Email Column */}
                       <td className="px-5 py-3.5">
                         <div className="font-semibold text-foreground truncate max-w-[200px]">
-                          {user.display_name || "Unidentified User"}
+                          {user.display_name || "User"}
                         </div>
                         <div className="font-mono text-[10px] text-text-muted mt-0.5 select-all truncate max-w-[200px]">
                           {user.email}
@@ -508,7 +508,7 @@ function AdminUsers() {
                             <button
                               onClick={() => handleStartEditCredits(user)}
                               className="p-0.5 rounded text-text-muted hover:text-primary hover:bg-bg-soft/60 transition-all duration-200 cursor-pointer"
-                              title="Override credits"
+                              title="Change credits"
                             >
                               <Edit2 className="h-3 w-3" />
                             </button>
@@ -524,9 +524,9 @@ function AdminUsers() {
                             : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                         }`}>
                           {user.is_blocked ? (
-                            <><Ban className="h-2.5 w-2.5" /> SUSPENDED</>
+                            <><Ban className="h-2.5 w-2.5" /> Suspended</>
                           ) : (
-                            <><Check className="h-2.5 w-2.5" /> ACTIVE</>
+                            <><Check className="h-2.5 w-2.5" /> Active</>
                           )}
                         </span>
                       </td>
@@ -542,7 +542,7 @@ function AdminUsers() {
                           }`}
                         >
                           <Shield className="h-3 w-3" />
-                          {user.is_admin ? "Sys Admin" : "Standard"}
+                          {user.is_admin ? "Admin" : "User"}
                         </button>
                       </td>
 
@@ -551,7 +551,7 @@ function AdminUsers() {
                         <button
                           onClick={() => setSelectedUser(user)}
                           className="p-1.5 rounded border border-border bg-bg-soft text-text-muted hover:text-foreground hover:bg-bg-soft transition-colors cursor-pointer"
-                          title="View user details & reviews"
+                          title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -563,7 +563,7 @@ function AdminUsers() {
                               ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
                               : "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                           }`}
-                          title={user.is_blocked ? "Unsuspend account" : "Suspend account"}
+                          title={user.is_blocked ? "Unsuspend" : "Suspend"}
                         >
                           {user.is_blocked ? <Unlock className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
                         </button>
@@ -572,7 +572,7 @@ function AdminUsers() {
                           onClick={() => handleDeleteUser(user)}
                           disabled={user.is_admin && user.email === "akshayrajput2616@gmail.com"} // safeguard
                           className="p-1.5 rounded border border-red-400/10 bg-red-400/5 text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40 disabled:hover:bg-red-400/5 disabled:cursor-not-allowed cursor-pointer"
-                          title="Purge user account"
+                          title="Delete User"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

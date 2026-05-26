@@ -90,11 +90,11 @@ function AdminOverview() {
       });
       if (res && res.ok) {
         setAiProvider(provider);
-        toast.success(`AI System Orchestrator updated to ${provider.toUpperCase()}`);
+        toast.success(`AI updated to ${provider.toUpperCase()}`);
       }
     } catch (e: any) {
       console.error("Failed to update AI Orchestrator:", e);
-      toast.error(e.message || "Failed to update AI Orchestrator settings");
+      toast.error(e.message || "Failed to update AI settings");
     } finally {
       setUpdatingSettings(false);
     }
@@ -112,11 +112,11 @@ function AdminOverview() {
       });
       if (res && res.ok) {
         setParallelEnabled(enabled);
-        toast.success(`Parallel Slicing Engine ${enabled ? "ENABLED" : "DISABLED"}`);
+        toast.success(`Speed Booster ${enabled ? "ON" : "OFF"}`);
       }
     } catch (e: any) {
       console.error("Failed to update Parallel Slicing settings:", e);
-      toast.error(e.message || "Failed to update Parallel Slicing settings");
+      toast.error(e.message || "Failed to update scanner speed settings");
     } finally {
       setUpdatingSettings(false);
     }
@@ -140,28 +140,28 @@ function AdminOverview() {
     {
       title: "Total Accounts",
       value: metrics.usersCount,
-      desc: "Registered developers",
+      desc: "Total user accounts",
       icon: UsersIcon,
       color: "text-blue-400 border-blue-400/20 bg-blue-400/5",
     },
     {
       title: "Reviews Conducted",
       value: metrics.reviewsCount,
-      desc: "All-time AI reports",
+      desc: "Total generated reviews",
       icon: ReviewIcon,
       color: "text-primary border-primary/20 bg-primary/5",
     },
     {
       title: "Active Queue Backlog",
       value: metrics.pendingQueueCount,
-      desc: "Pending background workers",
+      desc: "Reviews waiting in queue",
       icon: ActivityIcon,
       color: "text-amber-400 border-amber-400/20 bg-amber-400/5",
     },
     {
       title: "Review Fail Rate",
       value: metrics.failedCount,
-      desc: `${metrics.reviewsCount ? Math.round((metrics.failedCount / metrics.reviewsCount) * 100) : 0}% failure ratio`,
+      desc: `${metrics.reviewsCount ? Math.round((metrics.failedCount / metrics.reviewsCount) * 100) : 0}% failure rate`,
       icon: AlertTriangleIcon,
       color: "text-red-400 border-red-400/20 bg-red-400/5",
     },
@@ -177,7 +177,7 @@ function AdminOverview() {
           <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ admin / overview</div>
           <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">Admin Overview</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed font-sans">
-            Manage the AI settings, view system stats, and check recent code reviews.
+            Manage AI settings, view stats, and check recent reviews.
           </p>
         </div>
         <div className="flex items-center gap-2 border border-border bg-bg-soft/40 px-3 py-1.5 rounded-lg text-xs font-mono">
@@ -185,7 +185,7 @@ function AdminOverview() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
           </span>
-          <span className="text-text-muted">System Status:</span>
+          <span className="text-text-muted">Status:</span>
           <span className="text-primary font-semibold">Online</span>
         </div>
       </div>
@@ -232,17 +232,17 @@ function AdminOverview() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-primary font-semibold">
-                  <SettingsIcon className="h-3.5 w-3.5 text-primary" /> AI Model Configuration
+                  <SettingsIcon className="h-3.5 w-3.5 text-primary" /> AI Settings
                 </div>
-                <h2 className="text-lg font-semibold tracking-tightest font-sans">Select AI Model</h2>
+                <h2 className="text-lg font-semibold tracking-tightest font-sans">Choose AI Model</h2>
                 <p className="text-[11px] text-text-muted font-sans">
-                  Choose the AI engine to use for analyzing codebase files and pull request reviews.
+                  Pick which AI will check your code and reviews.
                 </p>
               </div>
               <div>
                 {updatingSettings && (
                   <span className="flex items-center gap-1.5 font-mono text-[10px] text-primary animate-pulse border border-primary/20 bg-primary/5 px-2.5 py-1 rounded-sm">
-                    <RefreshCw className="h-3 w-3 animate-spin" /> UPDATING AI CONFIGURATION...
+                    <RefreshCw className="h-3 w-3 animate-spin" /> SAVING AI SETTINGS...
                   </span>
                 )}
               </div>
@@ -274,7 +274,7 @@ function AdminOverview() {
                 </div>
                 <h3 className="text-xs font-semibold font-sans mt-4">Gemini Only</h3>
                 <p className="text-[10px] text-text-muted mt-1 leading-relaxed font-sans">
-                  Route all reviews through Google Gemini. Best for deep structures and large codebases.
+                  Use Google Gemini to scan all code. Great for large projects.
                 </p>
               </button>
 
@@ -303,7 +303,7 @@ function AdminOverview() {
                 </div>
                 <h3 className="text-xs font-semibold font-sans mt-4">OpenAI Only</h3>
                 <p className="text-[10px] text-text-muted mt-1 leading-relaxed font-sans">
-                  Route all reviews through OpenAI. Best for quick latency and small reviews.
+                  Use OpenAI to scan all code. Great for fast results.
                 </p>
               </button>
 
@@ -326,7 +326,7 @@ function AdminOverview() {
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-sans text-[8px] uppercase font-semibold border border-primary/20 bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm">
-                      FALLBACK ACTIVE
+                      BACKUP READY
                     </span>
                     {aiProvider === "both" && (
                       <span className="font-mono text-[9px] uppercase tracking-widest text-primary font-semibold flex items-center gap-1">
@@ -335,9 +335,9 @@ function AdminOverview() {
                     )}
                   </div>
                 </div>
-                <h3 className="text-xs font-semibold font-sans mt-4">Fallback Mode</h3>
+                <h3 className="text-xs font-semibold font-sans mt-4">Backup Mode</h3>
                 <p className="text-[10px] text-text-muted mt-1 leading-relaxed font-sans">
-                  Use Gemini as primary, and automatically switch to OpenAI as fallback if Gemini gets rate limited.
+                  Use Gemini first, and automatically switch to OpenAI if Gemini is busy.
                 </p>
               </button>
             </div>
@@ -349,7 +349,7 @@ function AdminOverview() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-border bg-bg-soft/20 hover:bg-bg-soft/40 transition-all duration-200">
               <div className="space-y-1 max-w-[80%]">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold font-sans text-foreground">High-Efficiency Parallel Slicing Engine</h3>
+                  <h3 className="text-sm font-semibold font-sans text-foreground">Fast Batch Scanner</h3>
                   <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border font-sans text-[8px] font-bold ${
                     parallelEnabled
                       ? "border-primary/20 bg-primary/10 text-primary animate-pulse"
@@ -359,11 +359,11 @@ function AdminOverview() {
                   </span>
                 </div>
                 <p className="text-[11px] text-text-muted leading-relaxed font-sans">
-                  Slices large codebases into dynamic parallel batches (10 files per chunk) to accelerate deep analysis and bypass context window bloating. If disabled, codebases are sent as a single unified batch.
+                  Splits large projects into groups of 10 files to scan them faster. If turned off, the whole project is scanned at once.
                 </p>
                 <div className="flex gap-4 mt-2 font-mono text-[9px] text-text-muted/80">
-                  <span>• Chunks: <strong className="text-foreground">10 files/chunk</strong></span>
-                  <span>• Bypass threshold: <strong className="text-foreground">≤ 15 files</strong></span>
+                  <span>• Group Size: <strong className="text-foreground">10 files</strong></span>
+                  <span>• Skip Grouping: <strong className="text-foreground">Under 15 files</strong></span>
                 </div>
               </div>
 
@@ -376,7 +376,7 @@ function AdminOverview() {
                   parallelEnabled ? "bg-primary" : "bg-bg-soft border-border"
                 } ${updatingSettings ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <span className="sr-only">Toggle Parallel Slicing Engine</span>
+                <span className="sr-only">Toggle Batch Scanner</span>
                 <span
                   aria-hidden="true"
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${
@@ -390,10 +390,10 @@ function AdminOverview() {
           {/* Quick info or manual audit note */}
           <div className="rounded-xl border border-border bg-bg-soft/50 p-6 space-y-2 font-sans">
             <h4 className="font-sans text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <ShieldIcon className="h-4 w-4 text-primary" /> How AI fallback works
+              <ShieldIcon className="h-4 w-4 text-primary" /> How Backup Mode Works
             </h4>
             <p className="text-[11px] text-text-muted leading-relaxed font-sans">
-              Our system runs reviews fast. In fallback mode, it sends requests to Google Gemini first. If Gemini is busy or rate limited, it automatically sends the request to OpenAI so the review doesn't fail.
+              Reviews are run quickly. If Gemini is busy, the backup AI (OpenAI) is automatically used so your review never gets stuck.
             </p>
           </div>
 
@@ -405,24 +405,24 @@ function AdminOverview() {
           {/* Average Health Score Widget */}
           <div className="rounded-xl border border-primary/25 bg-primary/2 p-6 flex flex-col items-center text-center gap-4 shadow-[inset_0_1px_0_0_rgba(190,242,100,0.05)]">
             <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-primary font-semibold">
-              <ActivityIcon className="h-4 w-4" /> Code Health Score
+              <ActivityIcon className="h-4 w-4" /> Code Health
             </div>
             <div>
               <div className="text-5xl font-medium font-sans text-primary tracking-tightest drop-shadow-[0_0_12px_rgba(190,242,100,0.15)]">
                 {metrics.avgScore}
               </div>
-              <div className="font-sans text-[9px] uppercase tracking-widest text-text-muted mt-1.5">Average Code Health</div>
+              <div className="font-sans text-[9px] uppercase tracking-widest text-text-muted mt-1.5">Average Score</div>
             </div>
             <div className="h-px w-full bg-border/60 my-2"></div>
             <p className="text-[11px] text-text-muted leading-relaxed font-sans">
-              Across all repositories, the average code health score is <span className="text-foreground font-semibold">{metrics.avgScore}/100</span>.
+              Across all projects, the average code health score is <span className="text-foreground font-semibold">{metrics.avgScore}/100</span>.
             </p>
           </div>
 
           {/* Model Engines Status Board */}
           <div className="rounded-xl border border-border bg-bg-elev p-6 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
             <h3 className="font-mono text-[10px] uppercase tracking-wider text-primary font-semibold flex items-center gap-1.5">
-              <CompassIcon className="h-3.5 w-3.5" /> AI Engine Status
+              <CompassIcon className="h-3.5 w-3.5" /> AI Status
             </h3>
             
             <div className="space-y-3">
@@ -433,8 +433,8 @@ function AdminOverview() {
                     <GeminiIcon className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-foreground font-sans">Google Gemini API</div>
-                    <div className="font-sans text-[8px] text-text-muted mt-0.5">Primary review provider</div>
+                    <div className="text-xs font-semibold text-foreground font-sans">Gemini</div>
+                    <div className="font-sans text-[8px] text-text-muted mt-0.5">Main AI</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -451,8 +451,8 @@ function AdminOverview() {
                     <OpenAIIcon className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-foreground font-sans">OpenAI API</div>
-                    <div className="font-sans text-[8px] text-text-muted mt-0.5">Fallback review provider</div>
+                    <div className="text-xs font-semibold text-foreground font-sans">OpenAI</div>
+                    <div className="font-sans text-[8px] text-text-muted mt-0.5">Backup AI</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -469,8 +469,8 @@ function AdminOverview() {
                     <ShieldIcon className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-foreground font-sans">Database Queue</div>
-                    <div className="font-sans text-[8px] text-text-muted mt-0.5">Supabase direct access</div>
+                    <div className="text-xs font-semibold text-foreground font-sans">Database</div>
+                    <div className="font-sans text-[8px] text-text-muted mt-0.5">System database</div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -486,13 +486,13 @@ function AdminOverview() {
           <div className="rounded-xl border border-border bg-bg-elev p-5 flex items-center justify-between shadow-[0_4px_24px_rgba(0,0,0,0.4)] font-sans">
             <div>
               <h4 className="text-xs font-semibold font-sans">Manage Users</h4>
-              <p className="text-[10px] text-text-muted mt-0.5 font-sans">Upgrade plans & add review credits</p>
+              <p className="text-[10px] text-text-muted mt-0.5 font-sans">Change plans and add review credits</p>
             </div>
             <Link
               to="/admin/users"
               className="inline-flex h-8 items-center justify-center rounded border border-border bg-bg-soft px-3 font-sans text-[10px] font-medium text-foreground hover:bg-bg-soft/80 transition-colors"
             >
-              Go to users
+              Manage Users
             </Link>
           </div>
 
@@ -500,12 +500,12 @@ function AdminOverview() {
 
       </div>
 
-      {/* Recent Reviews Audit Log */}
+      {/* Recent Reviews */}
       <div className="rounded-xl border border-border bg-bg-elev overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="p-5 border-b border-border/80 flex items-center justify-between">
           <h3 className="text-sm font-medium font-sans tracking-tightest">Recent Reviews</h3>
           <span className="font-mono text-[9px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2 py-0.5 rounded-sm">
-            Recent Logs
+            Recent
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -523,7 +523,7 @@ function AdminOverview() {
               {recentReviews.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-text-muted font-sans">
-                    No active reviews in database yet.
+                    No reviews yet.
                   </td>
                 </tr>
               ) : (
@@ -549,7 +549,7 @@ function AdminOverview() {
                                 : "bg-bg-soft text-text-muted border border-border"
                         }`}
                       >
-                        {r.status}
+                        {r.status === "complete" ? "Done" : r.status === "processing" ? "Scanning" : r.status === "failed" ? "Failed" : r.status}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 font-mono text-sm font-semibold">

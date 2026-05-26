@@ -63,7 +63,7 @@ function AdminLayout() {
         <div className="flex flex-col items-center gap-4">
           <DevPulseLoader />
           <p className="font-mono text-xs text-primary animate-pulse uppercase tracking-widest">
-            authorizing terminal admin session...
+            Authorizing admin session...
           </p>
         </div>
       </div>
@@ -72,12 +72,12 @@ function AdminLayout() {
 
   const menuItems = [
     { label: "Overview", to: "/admin", icon: DashboardIcon },
-    { label: "User Accounts", to: "/admin/users", icon: UsersIcon },
-    { label: "Blog Editor", to: "/admin/blog", icon: BlogIcon },
+    { label: "Users", to: "/admin/users", icon: UsersIcon },
+    { label: "Blogs", to: "/admin/blog", icon: BlogIcon },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row font-sans">
       <AnimatedIconsStyles />
       
       {/* Brutalist Sidebar */}
@@ -89,8 +89,8 @@ function AdminLayout() {
             <ShieldIcon className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-widest text-primary font-bold">Admin Manager</div>
-            <div className="text-sm font-extrabold tracking-tight">DevPulse Root</div>
+            <div className="font-mono text-[9px] uppercase tracking-widest text-primary font-bold">Admin Panel</div>
+            <div className="text-sm font-extrabold tracking-tight">DevPulse</div>
           </div>
         </div>
 
@@ -103,9 +103,9 @@ function AdminLayout() {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-xs font-mono font-medium transition-all duration-200 border ${
+                className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-xs font-sans tracking-tight font-medium transition-all duration-200 border ${
                   isActive
-                    ? "bg-primary/10 border-primary/20 text-primary"
+                    ? "bg-primary/10 border-primary/20 text-primary font-semibold"
                     : "border-transparent text-text-muted hover:bg-bg-soft hover:text-foreground"
                 }`}
               >
@@ -120,7 +120,7 @@ function AdminLayout() {
         <div className="mt-auto pt-6 border-t border-border/60">
           <Link
             to="/dashboard"
-            className="flex items-center gap-2 rounded-lg border border-border bg-bg-soft/50 px-4 py-2.5 text-xs font-mono font-medium text-text-muted hover:text-foreground hover:bg-bg-soft transition-all duration-200"
+            className="flex items-center gap-2 rounded-lg border border-border bg-bg-soft/50 px-4 py-2.5 text-xs font-sans tracking-tight font-medium text-text-muted hover:text-foreground hover:bg-bg-soft transition-all duration-200"
           >
             <ExitIcon className="h-4 w-4" /> Exit Admin
           </Link>
