@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValueEvent } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { 
   ArrowRight, Check, Github, Shield, Zap, Share2, Webhook, Users, GitPullRequest, 
@@ -11,6 +11,14 @@ import { HealthScore } from "@/components/HealthScore";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublishedBlogPosts } from "@/lib/blog.functions";
 import { fetchApi } from "@/lib/api-client";
+import {
+  ContainerScroll,
+  ContainerSticky,
+  ContainerAnimated,
+  ContainerInset,
+  HeroVideo,
+  useContainerScrollContext
+} from "@/components/ui/animated-video-on-scroll";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -47,57 +55,82 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Hero() {
+function HeroStickyContent() {
   const [url, setUrl] = useState("");
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { scrollYProgress } = useContainerScrollContext();
+
+  // Programmatically trigger video playback when scroll reaches >= 75% full scale
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (videoRef.current) {
+      if (latest >= 0.75) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  });
+
   return (
-    <section className="relative overflow-hidden border-b border-border">
-      <div className="absolute inset-0 dp-grid-bg" />
-      <div className="absolute left-1/2 top-1/2 -z-10 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(closest-side, rgba(190,242,100,0.10), transparent 70%)" }} />
+    <ContainerSticky className="bg-bg text-foreground px-6 py-10 flex flex-col justify-center items-center border-b border-border min-h-screen">
+      <div className="absolute inset-0 dp-grid-bg opacity-30 pointer-events-none" />
+      <div className="absolute left-1/2 top-1/2 -z-10 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, rgba(190,242,100,0.08), transparent 70%)" }} />
 
-      <Container className="relative grid gap-16 py-24 lg:grid-cols-[1.1fr_1fr] lg:py-32">
-        <div>
-          <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-sev-ok dp-pulse" />
-            <span className="text-text-muted">NEW —</span>
-            <span>GitHub App now available</span>
-          </motion.div>
+      <ContainerAnimated className="space-y-6 text-center flex flex-col items-center max-w-4xl mx-auto">
+        <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs">
+          <span className="h-1.5 w-1.5 rounded-full bg-sev-ok dp-pulse" />
+          <span className="text-text-muted">NEW —</span>
+          <span>GitHub App now available</span>
+        </motion.div>
 
-          <h1 className="tracking-tightest font-medium leading-[1.02]" style={{ fontSize: "clamp(40px, 6.5vw, 76px)" }}>
-            <motion.span initial={{ clipPath: "inset(0 100% 0 0)" }} animate={{ clipPath: "inset(0 0 0 0)" }} transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }} className="block">AI code reviews</motion.span>
-            <motion.span initial={{ clipPath: "inset(0 100% 0 0)" }} animate={{ clipPath: "inset(0 0 0 0)" }} transition={{ duration: 0.7, delay: 0.15, ease: [0.2, 0.7, 0.2, 1] }} className="block">
-              that <span className="text-primary">survive review</span>.<span className="dp-blink ml-1 font-thin">|</span>
-            </motion.span>
-          </h1>
+        <h1 className="tracking-tightest font-medium leading-[1.02] text-center text-foreground font-sans" style={{ fontSize: "clamp(32px, 5.5vw, 64px)" }}>
+          AI code reviews that <span className="text-primary">survive review</span>.<span className="dp-blink ml-1 font-thin">|</span>
+        </h1>
 
-          <p className="mt-6 max-w-[56ch] text-[18px] leading-relaxed text-text-muted">
-            Paste a GitHub PR URL. Get a severity-ranked review with line-by-line fixes in under 10 seconds. No senior dev required.
-          </p>
+        <p className="max-w-[56ch] text-[16px] md:text-[18px] leading-relaxed text-text-muted text-center font-sans">
+          Paste a GitHub PR URL. Get a severity-ranked review with line-by-line fixes in under 10 seconds. No senior dev required.
+        </p>
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); navigate({ to: "/reviews/new", search: { url } }); }}
-            className="mt-8 flex max-w-[560px] items-center gap-2 rounded-lg border border-border bg-bg-elev p-1.5 transition focus-within:border-primary"
-          >
-            <Github className="ml-2 h-4 w-4 text-text-muted" />
-            <input
-              value={url} onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://github.com/owner/repo/pull/123"
-              className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm outline-none placeholder:text-text-faint"
-            />
-            <button className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px">
-              Review <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </form>
+        <form
+          onSubmit={(e) => { e.preventDefault(); navigate({ to: "/reviews/new", search: { url } }); }}
+          className="flex w-full max-w-[560px] items-center gap-2 rounded-lg border border-border bg-bg-elev p-1.5 transition focus-within:border-primary"
+        >
+          <Github className="ml-2 h-4 w-4 text-text-muted" />
+          <input
+            value={url} onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://github.com/owner/repo/pull/123"
+            className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm outline-none placeholder:text-text-faint"
+          />
+          <button className="inline-flex items-center gap-1 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px cursor-pointer">
+            Review <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </form>
 
-          <div className="mt-6 flex items-center gap-4 font-mono text-xs text-text-muted">
-            <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> No card required</span>
-            <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> 5 free reviews</span>
-            <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> Public repos work</span>
-          </div>
+        <div className="flex flex-wrap justify-center items-center gap-4 font-mono text-xs text-text-muted">
+          <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> No card required</span>
+          <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> 5 free reviews</span>
+          <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> Public repos work</span>
         </div>
+      </ContainerAnimated>
 
-        <FloatingReviewCard />
-      </Container>
+      <ContainerInset className="max-h-[500px] w-full max-w-5xl rounded-xl border border-border/40 shadow-2xl overflow-hidden mt-8">
+        <HeroVideo
+          ref={videoRef}
+          src="/intro.mp4"
+          className="w-full h-full object-cover"
+        />
+      </ContainerInset>
+    </ContainerSticky>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="relative">
+      <ContainerScroll className="h-[220vh]">
+        <HeroStickyContent />
+      </ContainerScroll>
     </section>
   );
 }
