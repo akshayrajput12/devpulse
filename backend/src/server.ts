@@ -814,6 +814,20 @@ app.post(
 );
 
 app.post(
+  "/api/admin/toggle-block",
+  asyncHandler(async (req: express.Request, res: express.Response) => {
+    const schema = z.object({
+      access_token: z.string().min(10),
+      user_id: z.string().uuid(),
+      is_blocked: z.boolean(),
+    });
+    const parsed = schema.parse(req.body);
+    const result = await adminFunctions.toggleAdminUserBlock(parsed);
+    return res.json(result);
+  })
+);
+
+app.post(
   "/api/admin/delete-user",
   asyncHandler(async (req: express.Request, res: express.Response) => {
     const schema = z.object({

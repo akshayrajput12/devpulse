@@ -150,3 +150,16 @@ export async function updateAdminSettings(payload: {
   });
 }
 
+export async function toggleAdminUserBlock(payload: {
+  data: {
+    access_token: string;
+    user_id: string;
+    is_blocked: boolean;
+  };
+}) {
+  return fetchApi("/api/admin/toggle-block", {
+    method: "POST",
+    body: JSON.stringify(payload.data),
+  });
+}
+

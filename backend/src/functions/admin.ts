@@ -80,7 +80,7 @@ export async function getAdminUsers(data: { access_token: string; search?: strin
   const sb = userClient(data.access_token);
   let query = sb
     .from("profiles")
-    .select("id, email, display_name, plan, review_credits, reviews_used_this_month, is_admin, created_at");
+    .select("id, email, display_name, plan, review_credits, reviews_used_this_month, is_admin, is_blocked, has_password, created_at");
 
   if (data.search) {
     query = query.or(`email.ilike.%${data.search}%,display_name.ilike.%${data.search}%`);
@@ -90,6 +90,20 @@ export async function getAdminUsers(data: { access_token: string; search?: strin
   if (error) throw new Error(error.message);
 
   return users ?? [];
+}
+
+export async function toggleAdminUserBlock(data: { access_token: string; user_id: string; is_blocked: boolean }) {
+  const isAdmin = await verifyAdmin(data.access_token);
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const sb = userClient(data.access_token);
+  const { error } = await sb
+    .from("profiles")
+    .update({ is_blocked: data.is_blocked, updated_at: new Date().toISOString() })
+    .eq("id", data.user_id);
+
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 export async function updateAdminUserCredits(data: { access_token: string; user_id: string; credits: number }) {

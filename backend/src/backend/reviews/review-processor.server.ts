@@ -149,8 +149,13 @@ export async function processReviewBackend(params: {
     }
 
     const { data: profile } = review.user_id
-      ? await sb.from("profiles").select("plan, reviews_used_this_month, review_credits, github_access_token, email").eq("id", review.user_id).maybeSingle()
+      ? await sb.from("profiles").select("plan, reviews_used_this_month, review_credits, github_access_token, email, is_blocked").eq("id", review.user_id).maybeSingle()
       : { data: null };
+    
+    if (profile && (profile as any).is_blocked) {
+      throw new Error("Your account has been suspended. Please contact akshayrajput2616@gmail.com or 9653814628 for assistance.");
+    }
+
     const plan = profile?.plan ?? "free";
     userEmail = userEmail ?? (profile as any)?.email ?? null;
 

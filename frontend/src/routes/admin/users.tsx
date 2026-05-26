@@ -1,15 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getAdminUsers,
   updateAdminUserCredits,
   updateAdminUserPlan,
   toggleAdminRole,
   deleteAdminUserAccount,
+  toggleAdminUserBlock,
 } from "./-admin.functions";
 import { DevPulseLoader } from "@/components/DevPulseLoader";
-import { Search, Shield, Award, Edit2, Check, Trash2, UserCheck, AlertTriangle } from "lucide-react";
+import { Search, Shield, Edit2, Check, Trash2, ShieldAlert, X, Eye, Ban, Unlock, RefreshCw, GitPullRequest, Database, KeyRound, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/users")({
@@ -24,8 +26,234 @@ type AdminUser = {
   review_credits: number;
   reviews_used_this_month: number;
   is_admin: boolean;
+  is_blocked: boolean;
+  has_password: boolean;
   created_at: string;
 };
+
+function UserDetailModal({
+  user,
+  onClose,
+  onUpdatePlan,
+  onToggleBlock,
+  onToggleAdmin,
+  accessToken,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onUpdatePlan: (uid: string, plan: string) => Promise<void>;
+  onToggleBlock: (uid: string, current: boolean) => Promise<void>;
+  onToggleAdmin: (uid: string, current: boolean) => Promise<void>;
+  accessToken: string;
+}) {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+
+  const loadData = async () => {
+    setLoadingReviews(true);
+    try {
+      // 1. Fetch user reviews directly
+      const { data: revList, error: revErr } = await supabase
+        .from("reviews")
+        .select("id, pr_title, pr_url, status, health_score, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (!revErr && revList) {
+        setReviews(revList);
+      }
+
+      // 2. Fetch full profile including github integration
+      const { data: prof, error: profErr } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!profErr && prof) {
+        setProfileData(prof);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user.id]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal Box */}
+      <div className="relative z-10 w-full max-w-4xl rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+          <div>
+            <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user registry diagnostics</div>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">{user.display_name || "Workspace Profile"}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer">
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+
+        {/* Content columns */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-6 overflow-y-auto pr-1">
+          
+          {/* Left Column: Actions and settings */}
+          <div className="space-y-5">
+            <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3.5">
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Profile Properties</h3>
+              
+              <div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">User Email</div>
+                <div className="text-xs text-foreground font-mono mt-0.5 select-all">{user.email || "No email"}</div>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">Database ID</div>
+                <div className="text-[10px] text-text-faint font-mono mt-0.5 select-all">{user.id}</div>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-text-faint font-semibold uppercase">Date Registered</div>
+                <div className="text-xs text-foreground font-sans mt-0.5">
+                  {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-4">
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">System Suspension & controls</h3>
+              
+              {/* Plan controls */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-text-faint font-semibold uppercase">Pricing Plan Tier</label>
+                <select
+                  value={user.plan}
+                  onChange={(e) => onUpdatePlan(user.id, e.target.value)}
+                  className="w-full rounded border border-border bg-bg-soft font-sans text-xs font-semibold text-foreground px-3 py-2 outline-none cursor-pointer focus:border-primary/50"
+                >
+                  <option value="free">FREE</option>
+                  <option value="pro">PRO (₹999/mo)</option>
+                </select>
+              </div>
+
+              {/* Status parameters */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => onToggleBlock(user.id, user.is_blocked)}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded border font-sans text-xs font-semibold uppercase transition cursor-pointer ${
+                    user.is_blocked
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                      : "bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+                  }`}
+                >
+                  {user.is_blocked ? (
+                    <><Unlock className="h-3.5 w-3.5" /> Unsuspend User</>
+                  ) : (
+                    <><Ban className="h-3.5 w-3.5" /> Suspend User</>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => onToggleAdmin(user.id, user.is_admin)}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded border font-sans text-xs font-semibold uppercase transition cursor-pointer ${
+                    user.is_admin
+                      ? "bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20"
+                      : "bg-bg-soft border-border text-text-muted hover:border-primary/30 hover:text-primary"
+                  }`}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  {user.is_admin ? "Remove Admin" : "Make Admin"}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/60 bg-bg-soft/40 p-4 space-y-3">
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted border-b border-border/40 pb-1.5">Integration Parameters</h3>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-muted">GitHub Token:</span>
+                <span className={`font-mono font-semibold px-2 py-0.5 rounded text-[10px] ${
+                  profileData?.github_access_token ? "bg-primary/10 text-primary border border-primary/20" : "bg-bg-soft text-text-faint"
+                }`}>
+                  {profileData?.github_access_token ? "CONNECTED" : "DISCONNECTED"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-muted">Standalone Password:</span>
+                <span className={`font-mono font-semibold px-2 py-0.5 rounded text-[10px] ${
+                  user.has_password ? "bg-primary/10 text-primary border border-primary/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
+                }`}>
+                  {user.has_password ? "CONFIGURED" : "MISSING (REQUIRED)"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: User review history */}
+          <div className="flex flex-col h-full overflow-hidden min-h-[300px]">
+            <div className="flex items-center justify-between mb-3.5">
+              <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted">Code Review History</h3>
+              <span className="rounded bg-bg-soft border border-border px-2 py-0.5 font-mono text-[10px] text-text-muted">
+                {reviews.length} total reviews
+              </span>
+            </div>
+
+            <div className="flex-1 rounded-xl border border-border bg-bg-soft/10 overflow-hidden flex flex-col">
+              {loadingReviews ? (
+                <div className="flex-1 flex items-center justify-center p-12">
+                  <DevPulseLoader />
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-12 font-sans">
+                  <GitPullRequest className="h-8 w-8 text-text-faint mb-2" />
+                  <p className="text-xs text-text-muted">This developer has not processed any code reviews.</p>
+                </div>
+              ) : (
+                <div className="overflow-y-auto max-h-[350px] divide-y divide-border/30">
+                  {reviews.map((rev) => (
+                    <div key={rev.id} className="p-3.5 hover:bg-bg-soft/20 transition-colors flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-foreground truncate">{rev.pr_title || rev.pr_url}</div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="font-mono text-[9px] text-text-faint max-w-[200px] truncate select-all">{rev.pr_url}</span>
+                          <span className="text-text-faint/60 font-mono text-[9px]">• {new Date(rev.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 shrink-0">
+                        {rev.health_score != null && (
+                          <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${
+                            rev.health_score >= 80 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : rev.health_score >= 60 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
+                          }`}>
+                            {rev.health_score} / 100
+                          </span>
+                        )}
+                        <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-semibold ${
+                          rev.status === "complete" ? "bg-emerald-500/10 text-emerald-400" : rev.status === "failed" ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"
+                        }`}>
+                          {rev.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AdminUsers() {
   const { session } = useAuth();
@@ -34,6 +262,7 @@ function AdminUsers() {
   const [search, setSearch] = useState("");
   const [editingCreditsId, setEditingCreditsId] = useState<string | null>(null);
   const [tempCredits, setTempCredits] = useState<number>(0);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
   const fetchUsers = async () => {
     if (!session?.access_token) return;
@@ -69,8 +298,31 @@ function AdminUsers() {
       });
       toast.success(`Admin role updated successfully.`);
       fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, is_admin: !currentStatus } : null);
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to update admin role");
+    }
+  };
+
+  const handleToggleBlock = async (userId: string, currentStatus: boolean) => {
+    if (!session?.access_token) return;
+    try {
+      await toggleAdminUserBlock({
+        data: {
+          access_token: session.access_token,
+          user_id: userId,
+          is_blocked: !currentStatus,
+        }
+      });
+      toast.success(`User suspension state updated successfully.`);
+      fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, is_blocked: !currentStatus } : null);
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to toggle user block status");
     }
   };
 
@@ -86,6 +338,9 @@ function AdminUsers() {
       });
       toast.success(`User plan upgraded to ${plan.toUpperCase()}! Credits reset.`);
       fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, plan, review_credits: plan === "pro" ? 150 : 10 } : null);
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to update plan");
     }
@@ -109,6 +364,9 @@ function AdminUsers() {
       toast.success("Review credits overridden successfully.");
       setEditingCreditsId(null);
       fetchUsers();
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, review_credits: tempCredits } : null);
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to save credits");
     }
@@ -131,6 +389,7 @@ function AdminUsers() {
         }
       });
       toast.success("User account deleted successfully.");
+      setSelectedUser(null);
       fetchUsers();
     } catch (e: any) {
       toast.error(e.message || "Failed to delete account");
@@ -144,7 +403,7 @@ function AdminUsers() {
         <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ terminal root / database user registry</div>
         <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">User Account Management</h1>
         <p className="text-xs text-text-muted mt-1 leading-relaxed">
-          Manage individual user plans, override credit quotas, toggle administrative terminal privileges, or purge accounts.
+          Manage plans, override credit quotas, toggle admin terminal access, suspend users, or purge account registries.
         </p>
       </div>
 
@@ -179,6 +438,7 @@ function AdminUsers() {
                   <th className="px-5 py-3 font-medium">User Profile</th>
                   <th className="px-5 py-3 font-medium">Subscription Tier</th>
                   <th className="px-5 py-3 font-medium">Credits Quota</th>
+                  <th className="px-5 py-3 font-medium">Status Check</th>
                   <th className="px-5 py-3 font-medium">Terminal Role</th>
                   <th className="px-5 py-3 font-medium text-right">System Actions</th>
                 </tr>
@@ -186,13 +446,13 @@ function AdminUsers() {
               <tbody className="divide-y divide-border/30 font-sans">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-text-muted font-mono">
+                    <td colSpan={6} className="px-5 py-8 text-center text-text-muted font-mono">
                       No matching user records found in the registry.
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user.id} className="hover:bg-bg-soft/10 transition-colors">
+                    <tr key={user.id} className={`hover:bg-bg-soft/10 transition-colors ${user.is_blocked ? "bg-red-500/[0.02]" : ""}`}>
                       
                       {/* Name/Email Column */}
                       <td className="px-5 py-3.5">
@@ -256,6 +516,21 @@ function AdminUsers() {
                         )}
                       </td>
 
+                      {/* Suspension Status Column */}
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono text-[9px] font-semibold border ${
+                          user.is_blocked
+                            ? "bg-red-500/10 border-red-500/20 text-red-400"
+                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        }`}>
+                          {user.is_blocked ? (
+                            <><Ban className="h-2.5 w-2.5" /> SUSPENDED</>
+                          ) : (
+                            <><Check className="h-2.5 w-2.5" /> ACTIVE</>
+                          )}
+                        </span>
+                      </td>
+
                       {/* Admin status Column */}
                       <td className="px-5 py-3.5">
                         <button
@@ -271,12 +546,32 @@ function AdminUsers() {
                         </button>
                       </td>
 
-                      {/* Delete actions Column */}
-                      <td className="px-5 py-3.5 text-right">
+                      {/* System Actions Column */}
+                      <td className="px-5 py-3.5 text-right flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setSelectedUser(user)}
+                          className="p-1.5 rounded border border-border bg-bg-soft text-text-muted hover:text-foreground hover:bg-bg-soft transition-colors cursor-pointer"
+                          title="View user details & reviews"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        
+                        <button
+                          onClick={() => handleToggleBlock(user.id, user.is_blocked)}
+                          className={`p-1.5 rounded border transition-colors cursor-pointer ${
+                            user.is_blocked
+                              ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
+                              : "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
+                          }`}
+                          title={user.is_blocked ? "Unsuspend account" : "Suspend account"}
+                        >
+                          {user.is_blocked ? <Unlock className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                        </button>
+
                         <button
                           onClick={() => handleDeleteUser(user)}
                           disabled={user.is_admin && user.email === "akshayrajput2616@gmail.com"} // safeguard
-                          className="p-1.5 rounded border border-red-400/10 bg-red-400/5 text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40 disabled:hover:bg-red-400/5 disabled:cursor-not-allowed"
+                          className="p-1.5 rounded border border-red-400/10 bg-red-400/5 text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40 disabled:hover:bg-red-400/5 disabled:cursor-not-allowed cursor-pointer"
                           title="Purge user account"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -291,6 +586,18 @@ function AdminUsers() {
           </div>
         )}
       </div>
+
+      {/* User Detail View Dialog Modal */}
+      {selectedUser && session?.access_token && (
+        <UserDetailModal
+          user={selectedUser}
+          accessToken={session.access_token}
+          onClose={() => setSelectedUser(null)}
+          onUpdatePlan={handleUpdatePlan}
+          onToggleBlock={handleToggleBlock}
+          onToggleAdmin={handleToggleAdmin}
+        />
+      )}
     </div>
   );
 }
