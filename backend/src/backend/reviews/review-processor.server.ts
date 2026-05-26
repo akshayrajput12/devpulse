@@ -334,23 +334,25 @@ export async function processReviewBackend(params: {
         .eq("id", review.user_id);
     }
 
-    const appUrl = getRuntimeEnv("APP_URL") || "http://localhost:5173";
-    const { sendReviewCompleteEmail } = await import("../email/review-report.server.js");
-    await sendReviewCompleteEmail({
-      requestId,
-      reviewId: params.reviewId,
-      to: userEmail,
-      review: update,
-      findings,
-      appUrl,
-    }).catch(emailError => {
+    try {
+      const appUrl = getRuntimeEnv("APP_URL") || "http://localhost:5173";
+      const { sendReviewCompleteEmail } = await import("../email/review-report.server.js");
+      await sendReviewCompleteEmail({
+        requestId,
+        reviewId: params.reviewId,
+        to: userEmail,
+        review: update,
+        findings,
+        appUrl,
+      });
+    } catch (emailError) {
       logger.error("email.review_complete_failed", {
         requestId,
         reviewId: params.reviewId,
         email: userEmail,
         error: emailError,
       });
-    });
+    }
 
     logger.info("review.process_completed", {
       requestId,

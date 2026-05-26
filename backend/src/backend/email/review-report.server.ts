@@ -1,4 +1,4 @@
-import { sendMail } from "./mailer.server";
+import { sendMail } from "./mailer.server.js";
 import { logger } from "../logging/logger.server";
 
 function escapeHtml(value: unknown) {
