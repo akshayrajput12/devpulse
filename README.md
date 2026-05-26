@@ -5,7 +5,7 @@
 
 ---
 
-![DevPulse System Design and Repository Structure](docs/system-design.png)
+![DevPulse System Design and Repository Structure](docs/system-design.svg)
 
 ---
 
