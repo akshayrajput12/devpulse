@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, Github } from "lucide-react";
+import { Activity, ArrowRight, Github, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -53,7 +53,7 @@ function Login() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen lg:grid-cols-2 font-sans">
       <div className="hidden flex-col justify-between border-r border-border bg-bg-soft p-12 lg:flex">
         <a href="/" className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-sm bg-primary text-primary-foreground">
@@ -63,10 +63,10 @@ function Login() {
         </a>
         <div>
           <div className="font-mono text-[11px] uppercase tracking-widest text-primary">/ what you get</div>
-          <h2 className="mt-3 max-w-[20ch] font-medium tracking-tightest" style={{ fontSize: 36, lineHeight: 1.05 }}>
+          <h2 className="mt-3 max-w-[20ch] font-medium tracking-tightest font-sans" style={{ fontSize: 36, lineHeight: 1.05 }}>
             5 free reviews. No card. Connect GitHub to review private repos.
           </h2>
-          <p className="mt-4 max-w-[42ch] text-sm leading-relaxed text-text-muted">
+          <p className="mt-4 max-w-[42ch] text-sm leading-relaxed text-text-muted font-sans">
             Sign in with GitHub to grant repo read access — we use it only to fetch the PR diff. Email/password works too for public repos.
           </p>
         </div>
@@ -80,30 +80,41 @@ function Login() {
             <span className="font-semibold tracking-tightest">DevPulse</span>
           </a>
           <div className="font-mono text-[11px] uppercase tracking-widest text-text-faint">{mode === "signup" ? "/ create account" : "/ sign in"}</div>
-          <h1 className="mt-2 text-2xl font-medium tracking-tightest">{mode === "signup" ? "Get your first review free" : "Welcome back"}</h1>
+          <h1 className="mt-2 text-2xl font-medium tracking-tightest font-sans">{mode === "signup" ? "Get your first review free" : "Welcome back"}</h1>
 
           <button onClick={github} disabled={busy}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background transition hover:-translate-y-px disabled:opacity-50">
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background transition hover:-translate-y-px disabled:opacity-50 cursor-pointer">
             <Github className="h-4 w-4" />
             Continue with GitHub
           </button>
 
-          <div className="my-6 flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-          </div>
+          {mode === "signup" ? (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mt-6 font-sans text-xs text-text-muted leading-relaxed">
+              <div className="font-semibold text-foreground mb-1 flex items-center gap-1 font-sans">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> GitHub Signup Only
+              </div>
+              To ensure secure pull-request scanning and instant codebase access, signup is exclusively supported via GitHub authentication.
+            </div>
+          ) : (
+            <>
+              <div className="my-6 flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+              </div>
 
-          <form onSubmit={submit} className="space-y-3">
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
-              className="w-full rounded-md border border-border bg-bg-elev px-3 py-2.5 text-sm outline-none transition focus:border-primary" />
-            <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password"
-              className="w-full rounded-md border border-border bg-bg-elev px-3 py-2.5 text-sm outline-none transition focus:border-primary" />
-            <button disabled={busy} className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:-translate-y-px disabled:opacity-50">
-              {mode === "signup" ? "Create account" : "Sign in"} <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </form>
+              <form onSubmit={submit} className="space-y-3">
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
+                  className="w-full rounded-md border border-border bg-bg-elev px-3 py-2.5 text-sm outline-none transition focus:border-primary" />
+                <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password"
+                  className="w-full rounded-md border border-border bg-bg-elev px-3 py-2.5 text-sm outline-none transition focus:border-primary" />
+                <button disabled={busy} className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:-translate-y-px disabled:opacity-50 cursor-pointer">
+                  Sign in <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </form>
+            </>
+          )}
 
           <button onClick={() => setMode(m => m === "signin" ? "signup" : "signin")}
-            className="mt-6 w-full text-center text-sm text-text-muted hover:text-foreground">
+            className="mt-6 w-full text-center text-sm text-text-muted hover:text-foreground cursor-pointer">
             {mode === "signin" ? "No account yet? Create one →" : "Have an account? Sign in →"}
           </button>
         </div>
