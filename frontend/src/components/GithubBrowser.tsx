@@ -127,7 +127,7 @@ export function GithubBrowser() {
       </label>
 
       {/* Paste URL — highlighted bar */}
-      <div className="rounded-xl border border-primary/35 bg-primary/5 p-[1px] shadow-[0_0_12px_hsl(var(--primary)/0.12)]">
+      <div id="tour-paste-url" className="rounded-xl border border-primary/35 bg-primary/5 p-[1px] shadow-[0_0_12px_hsl(var(--primary)/0.12)]">
         <form
           onSubmit={handleOpenRepoLink}
           className="flex items-center gap-2 rounded-[10px] bg-bg-elev px-3 py-2.5 transition-all focus-within:bg-card"
@@ -159,7 +159,7 @@ export function GithubBrowser() {
       </p>
 
       {/* Repo list */}
-      <div className="overflow-hidden rounded-xl border border-border bg-bg-elev">
+      <div id="tour-repos-list" className="overflow-hidden rounded-xl border border-border bg-bg-elev">
         {loadingRepos ? (
           <div className="flex items-center justify-center gap-2 p-12 text-text-faint">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />

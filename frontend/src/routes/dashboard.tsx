@@ -25,27 +25,63 @@ type Review = {
 
 const TOUR_STEPS = [
   {
+    targetId: "tour-onboarding-guide-btn",
+    title: "1. Interactive Onboarding Guide",
+    content: "Welcome to DevPulse! This interactive 10-step guide walks you through automating pull request reviews, auditing backend services, checking folder modularity, and managing code health dashboards.\n\n🖱️ Action on Click: Opens this overlay system to easily understand our workflows.",
+    tab: "reviews"
+  },
+  {
     targetId: "tour-new-review",
-    title: "1. Automate PR Reviews",
-    content: "Paste any GitHub Pull Request link to analyze your changes. DevPulse reviews code automatically to catch bugs, styling issues, and security vulnerabilities.\n\n🖱️ Action on Click: Opens a custom modal where you select scanner engines and trigger real-time commit audits.",
+    title: "2. Automate Pull Request Reviews",
+    content: "Connect repository branch triggers or paste active PR links here. DevPulse reviews code changes automatically, leaving inline comments to catch bugs, design errors, and security hazards.\n\n🖱️ Action on Click: Opens the PR Review panel where you paste a Pull Request URL and run audits.",
+    tab: "reviews"
+  },
+  {
+    targetId: "tour-reviews-list",
+    title: "3. Complete & Track PR Reviews",
+    content: "Track active scans and finished reviews. Each row shows commit status details, date triggers, and direct links to comprehensive diagnostics, modularity scores, and AI-suggested code fixes.\n\n🖱️ Action on Click: Highlights row logs. Clicking a review logs card opens the complete, detailed audit workspace.",
+    tab: "reviews"
+  },
+  {
+    targetId: "tour-average-health",
+    title: "4. Average Code Health Metrics",
+    content: "Every automated PR review calculates a Code Health score out of 100 based on code quality, security vulnerabilities, N+1 query structures, and code modularity hazards.\n\n🖱️ Action on Click: Tracks overall code quality indicators across all of your connected repositories.",
+    tab: "reviews"
+  },
+  {
+    targetId: "tour-success-rate",
+    title: "5. Code Review Engine Performance",
+    content: "Monitors the delivery success rate of our automated review scanner engine, ensuring all commit audits are completed and queued securely.\n\n🖱️ Action on Click: Displays real-time scan statistics to keep operations visible.",
     tab: "reviews"
   },
   {
     targetId: "tour-github-tab",
-    title: "2. Full Codebase Audits",
-    content: "Browse and scan your connected repositories on-demand. Perform deep static analysis on public or private projects without waiting for PR commits.\n\n🖱️ Action on Click: Activates the Repository tab, displaying repository stats, branch listings, and instant full codebase audits.",
+    title: "6. GitHub Repository Audits",
+    content: "Integrate DevPulse with your GitHub accounts. View all connected public and private repositories, and trigger manual audits on any repository branch.\n\n🖱️ Action on Click: Switches to the Connected GitHub Repositories explorer page.",
+    tab: "github"
+  },
+  {
+    targetId: "tour-paste-url",
+    title: "7. Connect Any Repository Instantly",
+    content: "Need to audit a project quickly? Copy and paste any public or private GitHub repository link here to load branch workspaces and start auditing in seconds.\n\n🖱️ Action on Click: Resolves repository URLs to import and open project workspaces instantly.",
+    tab: "github"
+  },
+  {
+    targetId: "tour-repos-list",
+    title: "8. Connected Repository Workspaces",
+    content: "Once connected, your repositories are listed as cards. Clicking any repository opens its dedicated Codebase Workspace where you can run deep scans, browse files, and trigger PR audits.\n\n🖱️ Action on Click: Reveals your connected repositories and lets you navigate directly into their Workspaces.",
     tab: "github"
   },
   {
     targetId: "tour-api-tab",
-    title: "3. API & Backend Analyzer",
-    content: "Audit database schema layers and endpoint routing efficiency. DevPulse reviews controller queries to prevent N+1 query loops, transaction deadlocks, and slow performance.\n\n🖱️ Action on Click: Redirects to the API analyser workspace where you can run deep SQL performance audits.",
+    title: "9. API & Backend Database Analyzer",
+    content: "Switch to this analyzer to scan server routes and DB controllers. It uses Gemini to catch N+1 query loops, missing indices, schema hazards, and concurrency database locks.\n\n🖱️ Action on Click: Programmatically opens API description cards, and redirects to dedicated API Audits.",
     tab: "api"
   },
   {
     targetId: "tour-folder-nav",
-    title: "4. Folder Architecture Audits",
-    content: "Examine directory layouts to eliminate circular file dependencies. DevPulse diagrams package layer structures and creates modular migration checklists.\n\n🖱️ Action on Click: Launches the structure auditor to visualize architectural health and review coupling fixes.",
+    title: "10. Visual Folder Modularity Scans",
+    content: "Run structural folder audits. DevPulse analyzes your package layer structures, highlights circular dependencies, and generates modular migration checklists.\n\n🖱️ Action on Click: Directs you to the Folder Analysis dashboard to scan folder couplings and view refactoring steps.",
     tab: "reviews"
   }
 ];
@@ -226,6 +262,7 @@ function Dashboard() {
                 : "live · realtime connected"}
               <span className="text-text-faint/60">· {reviews.length} total</span>
               <button
+                id="tour-onboarding-guide-btn"
                 onClick={() => {
                   setTourStep(1);
                   setShowTour(true);
@@ -250,7 +287,7 @@ function Dashboard() {
 
         {/* Workspace Analytics Metrics Strip */}
         <div className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-bg-elev p-4 flex items-center justify-between">
+          <div id="tour-average-health" className="rounded-xl border border-border bg-bg-elev p-4 flex items-center justify-between">
             <div>
               <div className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Average Health Score</div>
               <div className="mt-1 text-2xl font-bold font-mono tracking-tight text-foreground">
@@ -269,7 +306,7 @@ function Dashboard() {
             <Activity className="h-8 w-8 text-primary/20 shrink-0" />
           </div>
 
-          <div className="rounded-xl border border-border bg-bg-elev p-4 flex items-center justify-between">
+          <div id="tour-success-rate" className="rounded-xl border border-border bg-bg-elev p-4 flex items-center justify-between">
             <div>
               <div className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Review Success Rate</div>
               <div className="mt-1 text-2xl font-bold font-mono tracking-tight text-foreground">
@@ -369,7 +406,7 @@ function Dashboard() {
             </div>
 
             {/* List */}
-            <div className="mt-6 overflow-hidden rounded-xl border border-border bg-bg-elev">
+            <div id="tour-reviews-list" className="mt-6 overflow-hidden rounded-xl border border-border bg-bg-elev">
               {loadingR ? (
                 <div className="p-10 text-center font-mono text-sm text-text-faint">loading…</div>
               ) : filtered.length === 0 ? (
