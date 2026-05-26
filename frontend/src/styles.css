@@ -1,0 +1,149 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------
+   DevPulse — developer-brutalist tokens (dark-only)
+   Lime accent ("the pulse"), JetBrains Mono for code/meta,
+   Space Grotesk for display + body.
+--------------------------------------------------------------- */
+
+@theme inline {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--bg-elev);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--bg-elev);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary: var(--bg-soft);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--bg-soft);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--accent-soft);
+  --color-accent-foreground: var(--accent-on-soft);
+  --color-destructive: var(--sev-crit);
+  --color-destructive-foreground: #fff;
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-bg-soft: var(--bg-soft);
+  --color-bg-code: var(--bg-code);
+  --color-border-faint: var(--border-faint);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+
+  --color-sev-crit: var(--sev-crit);
+  --color-sev-high: var(--sev-high);
+  --color-sev-med: var(--sev-med);
+  --color-sev-low: var(--sev-low);
+  --color-sev-ok: var(--sev-ok);
+}
+
+:root, .dark {
+  --bg:           #0A0A0B;
+  --bg-elev:      #111114;
+  --bg-soft:      #16161A;
+  --bg-code:      #0F0F12;
+  --border:       #1F1F25;
+  --border-faint: #18181D;
+  --text:         #ECECEE;
+  --text-muted:   #9C9CA4;
+  --text-faint:   #5C5C66;
+
+  --accent:        #BEF264;
+  --accent-soft:   rgba(190, 242, 100, 0.12);
+  --accent-ink:    #0A0A0B;
+  --accent-on-soft: #BEF264;
+
+  --sev-crit: #FB7185;
+  --sev-high: #FB923C;
+  --sev-med:  #FBBF24;
+  --sev-low:  #60A5FA;
+  --sev-ok:   #34D399;
+}
+
+.light {
+  --bg:           #FAFAFA;
+  --bg-elev:      #FFFFFF;
+  --bg-soft:      #F2F2F4;
+  --bg-code:      #F6F6F8;
+  --border:       #E4E4E8;
+  --border-faint: #ECECEF;
+  --text:         #0A0A0B;
+  --text-muted:   #57575F;
+  --text-faint:   #8E8E96;
+
+  --accent:        #4D7C0F;
+  --accent-soft:   rgba(77, 124, 15, 0.10);
+  --accent-ink:    #FFFFFF;
+  --accent-on-soft: #3F6B0C;
+
+  --sev-crit: #DC2626;
+  --sev-high: #EA580C;
+  --sev-med:  #CA8A04;
+  --sev-low:  #2563EB;
+  --sev-ok:   #059669;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--bg);
+  }
+  html.dark { color-scheme: dark; }
+  html.light { color-scheme: light; }
+  * { border-color: var(--border); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+}
+
+/* Utility helpers */
+.font-mono { font-family: var(--font-mono); }
+.tracking-tightest { letter-spacing: -0.035em; }
+
+/* Grid bg */
+.dp-grid-bg {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--text) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--text) 6%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+}
+
+/* Pulse waveform CTA bg */
+.dp-pulse-bg {
+  background-image:
+    radial-gradient(ellipse 60% 80% at 50% 50%, rgba(190,242,100,0.10), transparent 60%);
+}
+
+/* Marquee */
+@keyframes dp-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+.dp-marquee { animation: dp-marquee 40s linear infinite; }
+.dp-marquee-rev { animation: dp-marquee 50s linear infinite reverse; }
+
+@keyframes dp-blink { 50% { opacity: 0 } }
+.dp-blink { animation: dp-blink 1s steps(2) infinite; }
+
+@keyframes dp-pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.4); opacity: .6 } }
+.dp-pulse { animation: dp-pulse 2s ease-in-out infinite; }

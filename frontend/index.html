@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DevPulse — AI Code Reviews That Actually Ship</title>
+    <meta name="description" content="Paste a GitHub PR URL. Get a severity-ranked review with line-by-line fixes in under 10 seconds." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DevPulse — AI Code Reviews That Actually Ship" />
+    <meta property="og:description" content="Severity-ranked AI reviews for any GitHub PR." />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Inline script to apply theme before paint (avoids flash of incorrect theme) -->
+    <script>
+      (function(){
+        try {
+          var t = localStorage.getItem('dp-theme');
+          if (!t) {
+            t = 'light';
+          }
+          if (t === 'light') {
+            document.documentElement.classList.remove('dark');
+          }
+          document.documentElement.classList.add(t);
+          document.documentElement.style.colorScheme = t;
+        } catch(e) {
+          document.documentElement.classList.add('light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
