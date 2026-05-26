@@ -59,12 +59,15 @@ function HeroStickyContent() {
   const [url, setUrl] = useState("");
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isFullSize, setIsFullSize] = useState(false);
   const { scrollYProgress } = useContainerScrollContext();
 
-  // Programmatically trigger video playback when scroll reaches >= 75% full scale
+  // Programmatically trigger video playback and dynamic highlight border when scroll reaches >= 75% full scale
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const full = latest >= 0.75;
+    setIsFullSize(full);
     if (videoRef.current) {
-      if (latest >= 0.75) {
+      if (full) {
         videoRef.current.play().catch(() => {});
       } else {
         videoRef.current.pause();
@@ -73,11 +76,15 @@ function HeroStickyContent() {
   });
 
   return (
-    <ContainerSticky className="bg-bg text-foreground px-6 py-10 flex flex-col justify-center items-center border-b border-border min-h-screen">
+    <ContainerSticky className="bg-bg text-foreground px-6 py-8 flex flex-col justify-between items-center border-b border-border min-h-screen">
       <div className="absolute inset-0 dp-grid-bg opacity-30 pointer-events-none" />
       <div className="absolute left-1/2 top-1/2 -z-10 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, rgba(190,242,100,0.08), transparent 70%)" }} />
 
-      <ContainerAnimated className="space-y-6 text-center flex flex-col items-center max-w-4xl mx-auto">
+      {/* Top Spacer to push content towards center */}
+      <div className="h-2" />
+
+      {/* Main Animated Headers, Form, and Meta */}
+      <ContainerAnimated className="space-y-5 text-center flex flex-col items-center max-w-4xl mx-auto">
         <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs">
           <span className="h-1.5 w-1.5 rounded-full bg-sev-ok dp-pulse" />
           <span className="text-text-muted">NEW —</span>
@@ -109,18 +116,40 @@ function HeroStickyContent() {
 
         <div className="flex flex-wrap justify-center items-center gap-4 font-mono text-xs text-text-muted">
           <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> No card required</span>
-          <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> 5 free reviews</span>
+          <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> 10 free reviews</span>
           <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> Public repos work</span>
         </div>
       </ContainerAnimated>
 
-      <ContainerInset className="max-h-[500px] w-full max-w-5xl rounded-xl border border-border/40 shadow-2xl overflow-hidden mt-8">
+      {/* Dynamic Scaling Video Container with Glow Border Highlight */}
+      <ContainerInset className={`max-h-[420px] w-full max-w-5xl rounded-xl border transition-all duration-500 overflow-hidden mt-6 ${
+        isFullSize 
+          ? "border-primary shadow-[0_0_50px_rgba(190,242,100,0.25)]" 
+          : "border-border/40 shadow-xl"
+      }`}>
         <HeroVideo
           ref={videoRef}
           src="/intro.mp4"
           className="w-full h-full object-cover"
         />
       </ContainerInset>
+
+      {/* Dynamic Animated Scroll Mouse Indicator */}
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: isFullSize ? 0 : 0.8, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+        className="mt-6 flex flex-col items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-muted select-none pointer-events-none"
+      >
+        <span>Scroll to see how it works</span>
+        <motion.div 
+          animate={{ y: [0, 4, 0] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          className="flex h-5 w-3 justify-center rounded-full border border-text-muted/40 p-0.5"
+        >
+          <div className="h-1.5 w-1 rounded-full bg-primary" />
+        </motion.div>
+      </motion.div>
     </ContainerSticky>
   );
 }
