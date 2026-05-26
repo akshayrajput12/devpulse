@@ -53,7 +53,6 @@ function NewReview() {
     <div className="min-h-screen">
       <AppNav />
       <div className="mx-auto max-w-3xl px-6 py-16">
-        <div className="font-mono text-[11px] uppercase tracking-widest text-primary">/ new review</div>
         <h1 className="mt-2 text-3xl font-medium tracking-tightest">Paste a GitHub PR URL</h1>
         <p className="mt-2 text-text-muted">Public repos work out of the box. The review streams in as the AI lands findings.</p>
 

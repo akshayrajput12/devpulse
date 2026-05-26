@@ -154,7 +154,6 @@ function UserDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user details overrides</div>
             <h2 className="text-lg font-bold tracking-tight text-foreground">{profileData?.display_name || user.display_name || "User Details"}</h2>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer">
@@ -538,7 +537,6 @@ function AdminUsers() {
     <div className="space-y-6 font-sans">
       {/* Title */}
       <div>
-        <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ users</div>
         <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">Manage Users</h1>
         <p className="text-xs text-text-muted mt-1 leading-relaxed">
           Manage user plans, review credits, admin roles, and account settings.

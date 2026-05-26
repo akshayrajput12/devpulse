@@ -111,7 +111,6 @@ function AdminOverview() {
       {/* Welcome Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ admin / overview</div>
           <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">Admin Overview</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed font-sans">
             Manage AI settings, view stats, and check recent reviews.

@@ -46,7 +46,6 @@ function PublicReview() {
             <span className="grid h-6 w-6 place-items-center rounded-sm bg-primary text-primary-foreground"><Activity className="h-3.5 w-3.5" strokeWidth={2.5} /></span>
             <span className="font-semibold tracking-tightest">DevPulse</span>
           </Link>
-          <span className="font-mono text-[11px] uppercase tracking-widest text-text-faint">/ public review</span>
         </div>
       </header>
 

@@ -67,7 +67,6 @@ function PostDialog({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary mb-0.5">/ post to github pr</div>
             <h2 className="text-base font-semibold text-foreground">Choose review voice</h2>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition">
@@ -179,7 +178,6 @@ function EmailReportDialog({
       >
         <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary mb-0.5">/ email report</div>
             <h2 className="text-base font-semibold text-foreground">Send Review to Inbox</h2>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition">
@@ -1167,7 +1165,6 @@ function ReviewDetail() {
           {tab === "categories" && (
             <div className="space-y-6">
               <div className="rounded-xl border border-border bg-bg-elev p-6">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-primary">/ pro review categories</div>
                 <h3 className="mt-2 text-lg font-medium">Six-dimension analysis</h3>
                 <p className="mt-1 text-sm text-text-muted max-w-2xl">Every PR is evaluated across all six dimensions that separate a principal engineer's review from a basic linter. Each finding is precisely categorized so you know exactly what kind of problem you're dealing with.</p>
               </div>
@@ -1217,7 +1214,7 @@ function ReviewDetail() {
           {/* ── SUMMARY TAB ── */}
           {tab === "summary" && (
             <div className="rounded-xl border border-border bg-bg-elev p-8 space-y-6">
-              <div className="font-mono text-[11px] uppercase tracking-widest text-primary border-b border-border pb-2">/ AI architectural summary</div>
+              <h3 className="text-lg font-medium border-b border-border pb-2">AI Architectural Summary</h3>
               {review.summary
                 ? <div className="prose max-w-none">{parseMarkdown(review.summary)}</div>
                 : <p className="text-sm text-text-muted">{review.status === "complete" ? "No summary." : "Summary will appear when review completes…"}</p>
@@ -1231,7 +1228,7 @@ function ReviewDetail() {
               {/* Changed files from diff */}
               {changedFiles.length > 0 && (
                 <div className="rounded-xl border border-border bg-bg-elev p-6">
-                  <div className="font-mono text-[11px] uppercase tracking-widest text-primary mb-3">/ files changed in this pr ({changedFiles.length})</div>
+                  <h3 className="text-base font-medium mb-3">Files changed in this PR ({changedFiles.length})</h3>
                   <div className="flex flex-wrap gap-2">
                     {changedFiles.map(f => {
                       const hasFindings = !!findingsByFile[f];
@@ -1248,7 +1245,7 @@ function ReviewDetail() {
 
               {/* Files with findings */}
               <div className="rounded-xl border border-border bg-bg-elev p-6">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-primary mb-1">/ files with findings</div>
+                <h3 className="text-base font-medium mb-1">Files with findings</h3>
                 <p className="text-sm text-text-muted mb-0">Click any finding to inspect in the Issues tab.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -1292,8 +1289,7 @@ function ReviewDetail() {
           {tab === "share" && (
             <div className="max-w-2xl space-y-4">
               <div className="rounded-xl border border-border bg-bg-elev p-8">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-primary">/ public share link</div>
-                <h3 className="mt-2 text-lg font-medium">Read-only URL</h3>
+                <h3 className="text-lg font-medium">Read-only URL</h3>
                 <p className="mt-1 text-sm text-text-muted">Anyone with this link can view the review. They cannot edit or re-run it.</p>
                 <div className="mt-5 flex items-center gap-2 rounded-lg border border-border bg-bg-code px-3 py-2 font-mono text-sm">
                   <span className="truncate text-text-muted">{typeof window !== "undefined" ? window.location.origin : ""}/r/{review.share_token}</span>
@@ -1312,7 +1308,7 @@ function ReviewDetail() {
               </div>
 
               <div className="rounded-xl border border-border bg-bg-elev p-6">
-                <div className="font-mono text-[11px] uppercase tracking-widest text-primary mb-3">/ review metadata</div>
+                <h3 className="text-base font-medium mb-3">Review Metadata</h3>
                 <dl className="space-y-2 font-mono text-xs">
                   {[
                     ["Review ID", id],

@@ -175,7 +175,6 @@ function AdminCredits() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ admin / credits</div>
           <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">Credit Ledger</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed">
             Monitor allocations, audit server-side transaction logs, and override credit parameters across all active users.

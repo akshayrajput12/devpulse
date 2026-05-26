@@ -123,7 +123,6 @@ function AdminSettings() {
 
       {/* Header */}
       <div>
-        <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ admin / settings</div>
         <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">AI Settings</h1>
         <p className="text-xs text-text-muted mt-1 leading-relaxed font-sans">
           Configure model options, batch processing parameters, system backup configurations, and active service statuses.

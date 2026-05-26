@@ -231,7 +231,6 @@ function ApiAnalyserPage() {
             </div>
 
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-orange-400 mb-2">/ api & backend analyser</div>
               <h2 className="text-xl font-medium mb-1">Initiating Deep Analysis</h2>
               <p className="text-sm text-text-muted">{selectedRepo?.owner}/{selectedRepo?.repo}</p>
             </div>
@@ -302,9 +301,6 @@ function ApiAnalyserPage() {
 
         {/* Minimal High-End Hero */}
         <div className="space-y-2">
-          <div className="font-mono text-[9px] uppercase tracking-widest text-primary">
-            / db intelligence & concurrency analyser
-          </div>
           <h1 className="text-3xl font-medium tracking-tightest text-foreground font-sans">
             SQL Performance & Concurrency Analyser
           </h1>

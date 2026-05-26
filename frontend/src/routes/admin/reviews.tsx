@@ -75,7 +75,6 @@ function AdminReviews() {
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ admin / reviews</div>
           <h1 className="text-3xl font-medium tracking-tightest mt-1 text-foreground font-sans">All Reviews</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed">
             Inspect all codebase scan reports, active audit operations, and health scores across repositories.

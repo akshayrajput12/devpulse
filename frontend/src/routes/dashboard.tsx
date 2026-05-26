@@ -365,9 +365,8 @@ function Dashboard() {
       <div className="mx-auto max-w-[1240px] px-6 py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="font-mono text-[11px] uppercase tracking-widest text-primary">/ dashboard</div>
             <h1 className="mt-2 text-3xl font-medium tracking-tightest">Your workspace</h1>
-            <div className="mt-2 flex items-center gap-2 font-mono text-xs text-text-faint">
+            <div className="mt-2 flex items-center gap-2 font-mono text-xs text-text-faint font-normal">
               <span className={`h-1.5 w-1.5 rounded-full ${activeProcessing > 0 ? "bg-sev-med dp-pulse" : "bg-sev-ok"}`} />
               {activeProcessing > 0
                 ? `${activeProcessing} review${activeProcessing > 1 ? "s" : ""} in progress · live`
@@ -605,7 +604,6 @@ function Dashboard() {
                   <Database className="h-5 w-5 text-orange-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-orange-400 mb-1">/ api & backend analyser</div>
                   <h2 className="text-xl font-semibold text-foreground mb-1">Deep Backend & SQL Intelligence</h2>
                   <p className="text-sm text-text-muted leading-relaxed">
                     Auto-detects your API routes, controllers, DB queries, and service layers. Runs Gemini AI across all backend files to surface N+1 queries, missing indexes, transaction locks, rate-limiting gaps, and concurrency hazards.
@@ -693,7 +691,6 @@ function Dashboard() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
               <div>
-                <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ user profile settings</div>
                 <h2 className="text-lg font-bold tracking-tight text-foreground">Settings & Account</h2>
               </div>
               <button 

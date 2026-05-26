@@ -360,7 +360,6 @@ function AdminBlog() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-text-muted">/ blog</div>
           <h1 className="text-3xl font-extrabold tracking-tight mt-1">Manage Blog Posts</h1>
           <p className="text-xs text-text-muted mt-1 leading-relaxed">
             Write blog articles, update content, and publish them to your website.
