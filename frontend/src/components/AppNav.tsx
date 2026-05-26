@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Zap, Info, ShieldAlert, Sparkles, User as UserIcon, Calendar, LayoutDashboard, LogOut } from "lucide-react";
+import { Activity, Zap, Info, ShieldAlert, Sparkles, User as UserIcon, Calendar, LayoutDashboard, LogOut, X } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
@@ -104,33 +104,41 @@ export function AppNav() {
                   <span>{profile ? `${profile.review_credits} credits` : "loading..."}</span>
                 </button>
                 
-                {/* Custom Gorgeous Dropdown Tooltip */}
+                 {/* Custom Gorgeous Dropdown Tooltip */}
                 {showTooltip && (
                   <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-bg-elev p-4 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150 z-50 font-sans">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-faint font-sans">Credit Ledger</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-text-faint font-sans">Recent Credits</span>
                       <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-sans font-semibold text-primary capitalize">{profile?.plan || "free"} Plan</span>
                     </div>
-                    <p className="text-[11px] text-text-muted leading-relaxed mb-3 font-sans">
-                      Click to view exactly where and how your credits were used. Refreshes every 30 days.
-                    </p>
-                    <div className="space-y-2 font-sans">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-text-muted">⚡ Pull Request Review</span>
-                        <span className="font-medium text-foreground">-1 credit</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-text-muted">🏗️ Folder Structure Audit</span>
-                        <span className="font-medium text-foreground">-2 credits</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-text-muted">💡 Deep Codebase Audit</span>
-                        <span className="font-medium text-foreground">-3 credits</span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-text-muted">🎛️ API & Backend Analyser</span>
-                        <span className="font-medium text-foreground">-3 credits</span>
-                      </div>
+                    
+                    {/* Latest 3 credits usage logs */}
+                    <div className="space-y-2 mb-3.5 mt-1.5">
+                      {loadingReviews ? (
+                        <div className="text-[10px] text-text-faint animate-pulse">Loading transaction logs...</div>
+                      ) : reviews.length === 0 ? (
+                        <p className="text-[11px] text-text-muted leading-relaxed font-sans">
+                          No transactions yet. Scan code to use credits.
+                        </p>
+                      ) : (
+                        reviews.slice(0, 3).map((rev) => {
+                          const cost = rev.review_type === "folder_analysis" ? 2 : (rev.review_type === "codebase_audit" || rev.review_type === "api_analysis") ? 3 : 1;
+                          return (
+                            <div key={rev.id} className="flex justify-between items-center text-xs">
+                              <span className="text-text-muted truncate max-w-[180px]" title={rev.pr_title || "Manual Review"}>
+                                {rev.pr_title || "Manual Review"}
+                              </span>
+                              <span className="font-mono text-orange-400 font-semibold">-{cost} cr</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="border-t border-border/40 pt-2.5 text-center">
+                      <span className="text-[10px] font-sans text-primary font-bold animate-pulse">
+                        🖱️ Click to see complete ledger
+                      </span>
                     </div>
                   </div>
                 )}
