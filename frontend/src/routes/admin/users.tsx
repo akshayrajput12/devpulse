@@ -56,7 +56,7 @@ function UserDetailModal({
       // 1. Fetch user reviews directly
       const { data: revList, error: revErr } = await supabase
         .from("reviews")
-        .select("id, pr_title, pr_url, status, health_score, created_at")
+        .select("id, pr_title, pr_url, status, health_score, created_at, review_type")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -218,32 +218,38 @@ function UserDetailModal({
                 </div>
               ) : (
                 <div className="overflow-y-auto max-h-[350px] divide-y divide-border/30">
-                  {reviews.map((rev) => (
-                    <div key={rev.id} className="p-3.5 hover:bg-bg-soft/20 transition-colors flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-foreground truncate">{rev.pr_title || rev.pr_url}</div>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="font-mono text-[9px] text-text-faint max-w-[200px] truncate select-all">{rev.pr_url}</span>
-                          <span className="text-text-faint/60 font-mono text-[9px]">• {new Date(rev.created_at).toLocaleDateString()}</span>
+                  {reviews.map((rev) => {
+                    const cost = rev.review_type === "folder_analysis" ? 2 : (rev.review_type === "codebase_audit" || rev.review_type === "api_analysis") ? 3 : 1;
+                    return (
+                      <div key={rev.id} className="p-3.5 hover:bg-bg-soft/20 transition-colors flex items-center justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-foreground truncate">{rev.pr_title || rev.pr_url}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="font-mono text-[9px] text-text-faint max-w-[200px] truncate select-all">{rev.pr_url}</span>
+                            <span className="text-text-faint/60 font-mono text-[9px]">• {new Date(rev.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border border-orange-500/20 bg-orange-500/5 text-orange-400 font-bold">
+                            -{cost} cr
+                          </span>
+                          {rev.health_score != null && (
+                            <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${
+                              rev.health_score >= 80 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : rev.health_score >= 60 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
+                            }`}>
+                              {rev.health_score} / 100
+                            </span>
+                          )}
+                          <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-semibold ${
+                            rev.status === "complete" ? "bg-emerald-500/10 text-emerald-400" : rev.status === "failed" ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"
+                          }`}>
+                            {rev.status === "complete" ? "Done" : rev.status === "failed" ? "Failed" : rev.status === "processing" ? "Scanning" : rev.status}
+                          </span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3 shrink-0">
-                        {rev.health_score != null && (
-                          <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${
-                            rev.health_score >= 80 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : rev.health_score >= 60 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"
-                          }`}>
-                            {rev.health_score} / 100
-                          </span>
-                        )}
-                        <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-semibold ${
-                          rev.status === "complete" ? "bg-emerald-500/10 text-emerald-400" : rev.status === "failed" ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"
-                        }`}>
-                          {rev.status === "complete" ? "Done" : rev.status === "failed" ? "Failed" : rev.status === "processing" ? "Scanning" : rev.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

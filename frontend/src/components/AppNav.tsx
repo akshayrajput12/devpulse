@@ -4,6 +4,7 @@ import { useAuth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DevPulseLoader } from "@/components/DevPulseLoader";
 
 export function AppNav() {
   const { user, loading } = useAuth();
@@ -20,10 +21,14 @@ export function AppNav() {
   } | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      setReviews([]);
       return;
     }
     let active = true;
@@ -34,6 +39,19 @@ export function AppNav() {
         const { getUserProfileData } = await import("@/lib/reviews.functions");
         const data = await getUserProfileData({ data: { access_token: session.access_token } });
         if (active) setProfile(data as any);
+
+        // Fetch user reviews representing credit ledger
+        setLoadingReviews(true);
+        const { data: revList, error: revErr } = await supabase
+          .from("reviews")
+          .select("id, pr_title, pr_url, review_type, created_at, status")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+
+        if (!revErr && revList && active) {
+          setReviews(revList);
+        }
+        setLoadingReviews(false);
       } catch (err) {
         console.error("Failed to load profile credits", err);
       }
@@ -77,20 +95,24 @@ export function AppNav() {
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
               >
-                <div className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-3 py-1 font-mono text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10">
+                <button 
+                  onClick={() => setShowCreditModal(true)}
+                  className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-3 py-1 font-mono text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10 cursor-pointer"
+                  title="View detailed credit ledger"
+                >
                   <Zap className="h-3.5 w-3.5 text-orange-400 fill-orange-400/20" />
                   <span>{profile ? `${profile.review_credits} credits` : "loading..."}</span>
-                </div>
+                </button>
                 
                 {/* Custom Gorgeous Dropdown Tooltip */}
                 {showTooltip && (
                   <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-bg-elev p-4 shadow-xl backdrop-blur-xl animate-in fade-in slide-in-from-top-1 duration-150 z-50 font-sans">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-faint font-sans">Credit Allocation Ledger</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-text-faint font-sans">Credit Ledger</span>
                       <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-sans font-semibold text-primary capitalize">{profile?.plan || "free"} Plan</span>
                     </div>
                     <p className="text-[11px] text-text-muted leading-relaxed mb-3 font-sans">
-                      Credits are secure and database-validated server-side. Balanced triggers renew automatically every 30 days.
+                      Click to view exactly where and how your credits were used. Refreshes every 30 days.
                     </p>
                     <div className="space-y-2 font-sans">
                       <div className="flex justify-between items-center text-xs">
@@ -282,6 +304,110 @@ export function AppNav() {
           )}
         </div>
       </div>
+
+      {/* Credit Allocation Ledger Dialog Modal */}
+      {showCreditModal && profile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowCreditModal(false)} />
+          
+          <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] font-sans">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ credit ledger</div>
+                <h2 className="text-lg font-bold tracking-tight text-foreground">My Credit Usage</h2>
+              </div>
+              <button 
+                onClick={() => setShowCreditModal(false)} 
+                className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Credit Status Summary Cards */}
+            <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Balance</span>
+                <span className="text-3xl font-medium text-orange-400 tracking-tightest font-sans mt-1">
+                  {profile.review_credits} <span className="text-xs text-text-muted">credits left</span>
+                </span>
+              </div>
+              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Current Plan</span>
+                <span className="text-xl font-bold uppercase text-primary mt-1">
+                  {profile.plan} plan
+                </span>
+              </div>
+            </div>
+
+            {/* Scrollable ledger logs list */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-3 text-[10px] uppercase font-mono text-text-muted">
+                <span>Credit transaction history</span>
+                <span>{reviews.length} logs</span>
+              </div>
+
+              <div className="flex-1 border border-border rounded-xl bg-bg-soft/10 overflow-y-auto divide-y divide-border/30">
+                {loadingReviews ? (
+                  <div className="h-32 flex items-center justify-center">
+                    <DevPulseLoader />
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-text-muted">
+                    No transactions found. Scan code to use credits.
+                  </div>
+                ) : (
+                  reviews.map((rev) => {
+                    let cost = 1;
+                    let desc = "PR Review Scanned";
+                    if (rev.review_type === "folder_analysis") {
+                      cost = 2;
+                      desc = "Folder Structure Audit";
+                    } else if (rev.review_type === "codebase_audit") {
+                      cost = 3;
+                      desc = "Deep Codebase Audit";
+                    } else if (rev.review_type === "api_analysis") {
+                      cost = 3;
+                      desc = "API & Backend Analyser";
+                    }
+                    return (
+                      <div key={rev.id} className="p-3.5 flex justify-between items-center gap-4 hover:bg-bg-soft/20 transition-colors">
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-foreground truncate max-w-[340px]">
+                            {rev.pr_title || "Manual Review"}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[10px] text-text-faint font-mono">
+                            <span>{desc}</span>
+                            <span>•</span>
+                            <span>{new Date(rev.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className="font-mono text-xs font-bold text-red-400">
+                            -{cost} credits
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-5 border-t border-border pt-4 flex justify-end">
+              <button
+                onClick={() => setShowCreditModal(false)}
+                className="rounded-lg bg-primary px-5 py-2 text-xs font-mono font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-px cursor-pointer"
+              >
+                Close Ledger
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </header>
   );
 }

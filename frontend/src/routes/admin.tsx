@@ -12,6 +12,7 @@ import {
   ShieldIcon,
   SettingsIcon,
   ReviewIcon,
+  ActivityIcon,
 } from "@/components/AnimatedIcons";
 import { toast } from "sonner";
 
@@ -76,6 +77,7 @@ function AdminLayout() {
     { label: "Overview", to: "/admin", icon: DashboardIcon },
     { label: "Reviews", to: "/admin/reviews", icon: ReviewIcon },
     { label: "Users", to: "/admin/users", icon: UsersIcon },
+    { label: "Credits", to: "/admin/credits", icon: ActivityIcon },
     { label: "AI Settings", to: "/admin/settings", icon: SettingsIcon },
     { label: "Blogs", to: "/admin/blog", icon: BlogIcon },
   ];
