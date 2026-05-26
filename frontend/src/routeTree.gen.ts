@@ -25,6 +25,8 @@ import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as FolderAnalysisIdRouteImport } from './routes/folder-analysis_.$id'
 import { Route as BlogSlugRouteImport } from './routes/blog_.$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
 import { Route as AdminBlogRouteImport } from './routes/admin/blog'
 import { Route as WorkspaceOwnerRepoRouteImport } from './routes/workspace.$owner.$repo'
 
@@ -108,6 +110,16 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBlogRoute = AdminBlogRouteImport.update({
   id: '/blog',
   path: '/blog',
@@ -129,6 +141,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/admin/blog': typeof AdminBlogRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/folder-analysis/$id': typeof FolderAnalysisIdRoute
@@ -148,6 +162,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/admin/blog': typeof AdminBlogRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/folder-analysis/$id': typeof FolderAnalysisIdRoute
@@ -169,6 +185,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
   '/admin/blog': typeof AdminBlogRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog_/$slug': typeof BlogSlugRoute
   '/folder-analysis_/$id': typeof FolderAnalysisIdRoute
@@ -191,6 +209,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/admin/blog'
+    | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/users'
     | '/blog/$slug'
     | '/folder-analysis/$id'
@@ -210,6 +230,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/admin/blog'
+    | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/users'
     | '/blog/$slug'
     | '/folder-analysis/$id'
@@ -230,6 +252,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/pricing'
     | '/admin/blog'
+    | '/admin/reviews'
+    | '/admin/settings'
     | '/admin/users'
     | '/blog_/$slug'
     | '/folder-analysis_/$id'
@@ -373,6 +397,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/blog': {
       id: '/admin/blog'
       path: '/blog'
@@ -392,12 +430,16 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBlogRoute: typeof AdminBlogRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBlogRoute: AdminBlogRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

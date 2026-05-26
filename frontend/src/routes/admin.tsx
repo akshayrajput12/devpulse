@@ -10,6 +10,8 @@ import {
   BlogIcon,
   ExitIcon,
   ShieldIcon,
+  SettingsIcon,
+  ReviewIcon,
 } from "@/components/AnimatedIcons";
 import { toast } from "sonner";
 
@@ -72,7 +74,9 @@ function AdminLayout() {
 
   const menuItems = [
     { label: "Overview", to: "/admin", icon: DashboardIcon },
+    { label: "Reviews", to: "/admin/reviews", icon: ReviewIcon },
     { label: "Users", to: "/admin/users", icon: UsersIcon },
+    { label: "AI Settings", to: "/admin/settings", icon: SettingsIcon },
     { label: "Blogs", to: "/admin/blog", icon: BlogIcon },
   ];
 
