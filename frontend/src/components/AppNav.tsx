@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Activity, Zap, Info, ShieldAlert, Sparkles, User as UserIcon, Calendar, LayoutDashboard, LogOut, X } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -8,7 +8,6 @@ import { DevPulseLoader } from "@/components/DevPulseLoader";
 
 export function AppNav() {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<{
     id: string;
     email: string | null;
@@ -79,7 +78,7 @@ export function AppNav() {
           <Link to="/blog" className="hover:text-foreground">Blog</Link>
           {user && <Link to="/dashboard" className="hover:text-foreground">Dashboard</Link>}
           {user && (
-            <Link to="/folder-analysis" className="hover:text-foreground flex items-center gap-1">
+            <Link id="tour-folder-nav" to="/folder-analysis" className="hover:text-foreground flex items-center gap-1">
               Folder Analysis
               <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary leading-none">AI</span>
             </Link>
@@ -94,7 +93,7 @@ export function AppNav() {
                 className="relative cursor-pointer"
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
-                onClick={() => navigate({ to: "/dashboard", search: { credits: "true" } as any })}
+                onClick={() => setShowTooltip(prev => !prev)}
               >
                 <button 
                   className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-3 py-1 font-mono text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10 cursor-pointer"

@@ -6,7 +6,6 @@ import { AppNav } from "@/components/AppNav";
 import { useAuth } from "@/lib/auth";
 import { GithubBrowser } from "@/components/GithubBrowser";
 import { toast } from "sonner";
-import { DevPulseLoader } from "@/components/DevPulseLoader";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -22,6 +21,33 @@ type Review = {
   created_at: string;
   review_type?: string | null;
 };
+
+const TOUR_STEPS = [
+  {
+    targetId: "tour-new-review",
+    title: "1. Automate PR Reviews",
+    content: "Click 'New review' to paste any GitHub Pull Request link. DevPulse analyzes your code changes automatically to find bugs, security risks, and optimization options before you merge.",
+    tab: "reviews"
+  },
+  {
+    targetId: "tour-github-tab",
+    title: "2. Full Codebase Audits",
+    content: "Browse and audit your connected GitHub repositories directly. Under this mode, you can select any repo and execute a full codebase audit or scan specific directories.",
+    tab: "github"
+  },
+  {
+    targetId: "tour-api-tab",
+    title: "3. API & Backend Analyzer",
+    content: "Audit your API endpoints and backend services. The analyzer reviews routes and database queries to auto-detect N+1 loops, missing indices, and transaction concurrency hazards.",
+    tab: "api"
+  },
+  {
+    targetId: "tour-folder-nav",
+    title: "4. Folder Architecture Audits",
+    content: "Click 'Folder Analysis' in the top navigation to run structure audits of your directories. It details package layers and dependency flows, generating clean modular checklists.",
+    tab: "reviews"
+  }
+];
 
 type Finding = { review_id: string; severity: string };
 
@@ -42,18 +68,6 @@ function Dashboard() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [sev, setSev] = useState<SevFilter>("all");
   const [liveTick, setLiveTick] = useState(0);
-  const [showCreditModal, setShowCreditModal] = useState(false);
-  const [profile, setProfile] = useState<{
-    id: string;
-    email: string | null;
-    plan: string;
-    review_credits: number;
-    last_reset_at: string;
-    subscription_expires_at: string | null;
-    is_admin: boolean;
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null>(null);
 
   const [showTour, setShowTour] = useState(() => {
     if (typeof window !== "undefined") {
@@ -62,11 +76,12 @@ function Dashboard() {
     return true;
   });
   const [tourStep, setTourStep] = useState(1);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   function dismissTour() {
     setShowTour(false);
     localStorage.setItem("devpulse_dashboard_tour_seen", "true");
-    toast.success("Walkthrough guide dismissed. Access it anytime with the '(?) Onboarding Guide' button.");
+    toast.success("Onboarding walkthrough completed! Access it anytime with the '(?) Onboarding Guide' button.");
   }
 
   const avgHealthScore = useMemo(() => {
@@ -104,36 +119,86 @@ function Dashboard() {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (!user) {
-      setProfile(null);
+    if (!showTour) {
+      setTargetRect(null);
       return;
     }
-    let active = true;
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const { getUserProfileData } = await import("@/lib/reviews.functions");
-        const data = await getUserProfileData({ data: { access_token: session.access_token } });
-        if (active) setProfile(data as any);
-      } catch (err) {
-        console.error("Failed to load profile credits", err);
+    const updateRect = () => {
+      const step = TOUR_STEPS[tourStep - 1];
+      if (!step) return;
+      const el = document.getElementById(step.targetId);
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        setTargetRect(null);
       }
-    })();
-    return () => { active = false; };
-  }, [user]);
+    };
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get("credits") === "true") {
-      setShowCreditModal(true);
-      // Clean URL without adding history entry after a tiny timeout to avoid React transition collision
-      const timer = setTimeout(() => {
-        navigate({ to: "/dashboard", replace: true });
-      }, 50);
-      return () => clearTimeout(timer);
+    const timer = setTimeout(updateRect, 250);
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect);
+    };
+  }, [showTour, tourStep, activeTab]);
+
+  const handleTourNext = () => {
+    if (tourStep < TOUR_STEPS.length) {
+      const nextStep = tourStep + 1;
+      const stepConfig = TOUR_STEPS[nextStep - 1];
+      if (stepConfig.tab && stepConfig.tab !== activeTab) {
+        setActiveTab(stepConfig.tab as any);
+      }
+      setTourStep(nextStep);
+    } else {
+      dismissTour();
     }
-  }, [location, navigate]);
+  };
+
+  const handleTourBack = () => {
+    if (tourStep > 1) {
+      const prevStep = tourStep - 1;
+      const stepConfig = TOUR_STEPS[prevStep - 1];
+      if (stepConfig.tab && stepConfig.tab !== activeTab) {
+        setActiveTab(stepConfig.tab as any);
+      }
+      setTourStep(prevStep);
+    }
+  };
+
+  const getPopoverCoordinates = () => {
+    if (!targetRect) return { top: 0, left: 0, arrowLeft: 150, show: false, placement: "bottom" };
+    
+    let placement = "bottom";
+    let top = targetRect.bottom + 12;
+    let left = targetRect.left + targetRect.width / 2 - 160;
+    
+    const minPadding = 16;
+    if (left < minPadding) left = minPadding;
+    if (left + 320 > window.innerWidth - minPadding) left = window.innerWidth - 320 - minPadding;
+    
+    const popoverHeightEst = 220;
+    if (top + popoverHeightEst > window.innerHeight - minPadding) {
+      placement = "top";
+      top = targetRect.top - popoverHeightEst - 12;
+    }
+
+    const targetCenterViewport = targetRect.left + targetRect.width / 2;
+    const arrowLeft = targetCenterViewport - left - 6;
+    
+    return { 
+      top, 
+      left, 
+      arrowLeft: Math.max(12, Math.min(300, arrowLeft)), 
+      show: true, 
+      placement 
+    };
+  };
+
+  const popoverPos = getPopoverCoordinates();
 
   useEffect(() => {
     if (!user) return;
@@ -241,7 +306,11 @@ function Dashboard() {
                 : "live · realtime connected"}
               <span className="text-text-faint/60">· {reviews.length} total</span>
               <button
-                onClick={() => setShowTour(prev => !prev)}
+                onClick={() => {
+                  setTourStep(1);
+                  setShowTour(true);
+                  setActiveTab("reviews");
+                }}
                 className="ml-2 inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors uppercase tracking-wider"
               >
                 <HelpCircle className="h-3.5 w-3.5 text-primary" /> Onboarding Guide
@@ -249,6 +318,7 @@ function Dashboard() {
             </div>
           </div>
           <Link
+            id="tour-new-review"
             to="/reviews/new"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px"
           >
@@ -256,168 +326,7 @@ function Dashboard() {
           </Link>
         </div>
 
-        {/* Onboarding stepper walkthrough guide */}
-        {showTour && (
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5 md:p-6 transition-all duration-200 shadow-sm relative overflow-hidden">
-            {/* Visual background accents */}
-            <div className="absolute -top-12 -right-12 h-24 w-24 rounded-full bg-primary/10 blur-xl pointer-events-none" />
-            
-            {/* Top row */}
-            <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-                <span className="text-sm font-semibold tracking-tight">Walkthrough Guide for First-time Users</span>
-                <span className="rounded bg-primary/15 border border-primary/30 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-primary">
-                  Step {tourStep} of 3
-                </span>
-              </div>
-              <button
-                onClick={dismissTour}
-                className="text-xs text-text-muted hover:text-foreground font-mono transition-colors font-semibold"
-              >
-                Dismiss walkthrough
-              </button>
-            </div>
 
-            {/* Step content */}
-            <div className="grid gap-6 md:grid-cols-[auto_1fr] md:items-start">
-              {/* Stepper Side Icons */}
-              <div className="flex flex-col items-center gap-2 md:w-16">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all ${
-                  tourStep === 1 
-                    ? "border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(190,242,100,0.2)]" 
-                    : "border-border bg-bg-elev text-text-muted"
-                }`}>
-                  <Github className="h-5.5 w-5.5" />
-                </div>
-                <div className="h-5 w-px bg-border/40" />
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all ${
-                  tourStep === 2 
-                    ? "border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(190,242,100,0.2)]" 
-                    : "border-border bg-bg-elev text-text-muted"
-                }`}>
-                  <GitPullRequest className="h-5.5 w-5.5" />
-                </div>
-                <div className="h-5 w-px bg-border/40" />
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all ${
-                  tourStep === 3 
-                    ? "border-primary bg-primary/10 text-primary shadow-[0_0_8px_rgba(190,242,100,0.2)]" 
-                    : "border-border bg-bg-elev text-text-muted"
-                }`}>
-                  <Database className="h-5.5 w-5.5" />
-                </div>
-              </div>
-
-              {/* Step Detail Description */}
-              <div className="space-y-4">
-                {tourStep === 1 && (
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-foreground">Step 1: Connect your GitHub Account</h3>
-                    <p className="text-xs text-text-muted leading-relaxed font-sans">
-                      DevPulse integrates directly into your version control system to audit your repositories securely.
-                    </p>
-                    <ul className="space-y-1.5 text-xs text-text-muted/90 font-mono">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Navigate to the <strong>GitHub Repositories</strong> tab below.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Click <strong>"Configure & Connect Account"</strong> to install our GitHub Integration App.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Select the repos you want to analyze — both public & private work seamlessly.</span>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-
-                {tourStep === 2 && (
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-foreground">Step 2: Automate AI Code & PR Reviews</h3>
-                    <p className="text-xs text-text-muted leading-relaxed font-sans">
-                      DevPulse acts as an automated security and performance-focused code reviewer on every commit.
-                    </p>
-                    <ul className="space-y-1.5 text-xs text-text-muted/90 font-mono">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Submit a Pull Request on GitHub to trigger audits automatically!</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Or, click <strong>"New review"</strong> at the top right of this dashboard and paste any PR link.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Inspect diagnostics and apply suggested code fixes in one click inside reviews.</span>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-
-                {tourStep === 3 && (
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-foreground">Step 3: Advanced Structure & API Audits</h3>
-                    <p className="text-xs text-text-muted leading-relaxed font-sans">
-                      Run specialised, deep architecture analysis and database performance audits on demand.
-                    </p>
-                    <ul className="space-y-1.5 text-xs text-text-muted/90 font-mono">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Open <strong>API & Backend Analyser</strong> to check routes, SQL efficiency, and concurrency lock hazards.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Click <strong>"Folder Analysis"</strong> in the main navigation to audit directory structures against industry anti-patterns.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span>Explore full structural migration checklists to keep code clean and modular.</span>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-
-                {/* Footer Controls */}
-                <div className="flex items-center gap-2 pt-3 border-t border-border/20 mt-4 flex-wrap">
-                  <button
-                    disabled={tourStep === 1}
-                    onClick={() => setTourStep(t => Math.max(1, t - 1))}
-                    className="inline-flex items-center gap-1 rounded border border-border px-3 py-1.5 font-mono text-xs text-text-muted hover:text-foreground transition hover:bg-bg-soft disabled:opacity-30 disabled:hover:bg-transparent"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" /> Back
-                  </button>
-                  {tourStep < 3 ? (
-                    <button
-                      onClick={() => setTourStep(t => Math.min(3, t + 1))}
-                      className="inline-flex items-center gap-1 rounded bg-primary px-3 py-1.5 font-mono text-xs font-semibold text-primary-foreground transition hover:-translate-y-px"
-                    >
-                      Next Step <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={dismissTour}
-                      className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 font-mono text-xs font-semibold text-primary-foreground transition hover:-translate-y-px"
-                    >
-                      <Check className="h-3.5 w-3.5" /> Finish Walkthrough
-                    </button>
-                  )}
-                  <div className="ml-auto flex gap-1">
-                    {[1, 2, 3].map(step => (
-                      <button
-                        key={step}
-                        onClick={() => setTourStep(step)}
-                        className={`h-2 w-2 rounded-full transition-all ${tourStep === step ? "bg-primary w-4" : "bg-border/60 hover:bg-text-muted"}`}
-                        aria-label={`Go to step ${step}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Workspace Analytics Metrics Strip */}
         <div className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-3">
@@ -475,19 +384,28 @@ function Dashboard() {
         {/* Tab switcher */}
         <div className="mt-8 flex gap-1 border-b border-border-faint">
           <button 
+            id="tour-reviews-tab"
             onClick={() => setActiveTab("reviews")} 
             className={`-mb-px px-4 py-2.5 text-sm font-medium transition border-b-2 ${activeTab === "reviews" ? "border-primary text-foreground" : "border-transparent text-text-muted hover:text-foreground"}`}
           >
             Reviews History
           </button>
           <button 
+            id="tour-github-tab"
             onClick={() => setActiveTab("github")} 
             className={`-mb-px px-4 py-2.5 text-sm font-medium transition border-b-2 ${activeTab === "github" ? "border-primary text-foreground" : "border-transparent text-text-muted hover:text-foreground"}`}
           >
             GitHub Repositories Full Codebase Audit
           </button>
           <button 
-            onClick={() => navigate({ to: "/api-analyser" })} 
+            id="tour-api-tab"
+            onClick={() => {
+              if (showTour) {
+                setActiveTab("api");
+              } else {
+                navigate({ to: "/api-analyser" });
+              }
+            }} 
             className={`-mb-px px-4 py-2.5 text-sm font-medium transition border-b-2 flex items-center gap-2 ${activeTab === "api" ? "border-orange-400 text-orange-300" : "border-transparent text-text-muted hover:text-foreground"}`}
           >
             <Database className="h-3.5 w-3.5" /> API & Backend Analyser
@@ -684,108 +602,100 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Credit Allocation Ledger Dialog Modal */}
-      {showCreditModal && profile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setShowCreditModal(false)} />
-          
-          <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] font-sans animate-in zoom-in-95 duration-200">
+      {/* Interactive Walkthrough Tour Overlay */}
+      {showTour && popoverPos.show && (
+        <>
+          {/* Backdrop Overlay */}
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-[2px] transition-all" />
+
+          {/* Glowing Spotlight Focus Ring */}
+          {targetRect && (
+            <div 
+              className="fixed z-[101] rounded-lg pointer-events-none transition-all duration-300 border-[3px] border-primary shadow-[0_0_20px_#bef264,0_0_0_9999px_rgba(0,0,0,0.65)] animate-in fade-in duration-200"
+              style={{
+                top: targetRect.top - 6,
+                left: targetRect.left - 6,
+                width: targetRect.width + 12,
+                height: targetRect.height + 12,
+              }}
+            />
+          )}
+
+          {/* Floating Explanatory Popover Card */}
+          <div 
+            className="fixed z-[102] w-[320px] rounded-2xl border border-primary/30 bg-[#121214] p-5 shadow-2xl font-sans animate-in zoom-in-95 duration-200 text-foreground"
+            style={{
+              top: popoverPos.top,
+              left: popoverPos.left,
+            }}
+          >
+            {/* Small arrow pointing to target */}
+            {popoverPos.placement === "bottom" ? (
+              <div 
+                className="absolute h-3 w-3 rotate-45 bg-[#121214] border-l border-t border-primary/30"
+                style={{
+                  top: -6,
+                  left: popoverPos.arrowLeft,
+                }}
+              />
+            ) : (
+              <div 
+                className="absolute h-3 w-3 rotate-45 bg-[#121214] border-r border-b border-primary/30"
+                style={{
+                  bottom: -6,
+                  left: popoverPos.arrowLeft,
+                }}
+              />
+            )}
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border pb-4 mb-5">
-              <div>
-                <div className="font-mono text-[9px] uppercase tracking-widest text-primary mb-0.5">/ credit ledger</div>
-                <h2 className="text-lg font-bold tracking-tight text-foreground">My Credit Usage</h2>
-              </div>
-              <button 
-                onClick={() => setShowCreditModal(false)} 
-                className="rounded-lg p-1.5 text-text-muted hover:text-foreground hover:bg-bg-soft transition cursor-pointer"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-3.5">
+              <span className="text-xs font-bold text-primary flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" /> Onboarding Guide
+              </span>
+              <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">
+                Step {tourStep} of {TOUR_STEPS.length}
+              </span>
             </div>
 
-            {/* Credit Status Summary Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center animate-in slide-in-from-left duration-200">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Balance</span>
-                <span className="text-3xl font-medium text-orange-400 tracking-tightest font-sans mt-1">
-                  {profile.review_credits} <span className="text-xs text-text-muted">credits left</span>
-                </span>
-              </div>
-              <div className="p-4 rounded-xl border border-border bg-bg-soft/30 flex flex-col justify-center animate-in slide-in-from-right duration-200">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Current Plan</span>
-                <span className="text-xl font-bold uppercase text-primary mt-1">
-                  {profile.plan} plan
-                </span>
-              </div>
+            {/* Body Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold tracking-tight text-white">
+                {TOUR_STEPS[tourStep - 1]?.title}
+              </h3>
+              <p className="text-[11px] text-text-muted leading-relaxed font-sans font-normal">
+                {TOUR_STEPS[tourStep - 1]?.content}
+              </p>
             </div>
 
-            {/* Scrollable ledger logs list */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between mb-3 text-[10px] uppercase font-mono text-text-muted">
-                <span>Credit transaction history</span>
-                <span>{reviews.length} logs</span>
-              </div>
-
-              <div className="flex-1 border border-border rounded-xl bg-bg-soft/10 overflow-y-auto divide-y divide-border/30">
-                {loadingR ? (
-                  <div className="h-32 flex items-center justify-center">
-                    <DevPulseLoader />
-                  </div>
-                ) : reviews.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-text-muted">
-                    No transactions found. Scan code to use credits.
-                  </div>
-                ) : (
-                  reviews.map((rev) => {
-                    let cost = 1;
-                    let desc = "PR Review Scanned";
-                    if (rev.review_type === "folder_analysis") {
-                      cost = 2;
-                      desc = "Folder Structure Audit";
-                    } else if (rev.review_type === "codebase_audit") {
-                      cost = 3;
-                      desc = "Deep Codebase Audit";
-                    } else if (rev.review_type === "api_analysis") {
-                      cost = 3;
-                      desc = "API & Backend Analyser";
-                    }
-                    return (
-                      <div key={rev.id} className="p-3.5 flex justify-between items-center gap-4 hover:bg-bg-soft/20 transition-colors">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-foreground truncate max-w-[340px]">
-                            {rev.pr_title || "Manual Review"}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-text-faint font-mono">
-                            <span>{desc}</span>
-                            <span>•</span>
-                            <span>{new Date(rev.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <span className="font-mono text-xs font-bold text-red-400">
-                            -{cost} credits
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="mt-5 border-t border-border pt-4 flex justify-end">
+            {/* Navigation Actions Footer */}
+            <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
               <button
-                onClick={() => setShowCreditModal(false)}
-                className="rounded-lg bg-primary px-5 py-2 text-xs font-mono font-bold text-primary-foreground transition-all duration-200 hover:-translate-y-px cursor-pointer"
+                onClick={dismissTour}
+                className="text-[10px] text-text-faint hover:text-foreground font-mono transition-colors font-semibold uppercase tracking-wider bg-transparent border-0 cursor-pointer"
               >
-                Close Ledger
+                Skip Guide
               </button>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={tourStep === 1}
+                  onClick={handleTourBack}
+                  className="rounded border border-border px-2.5 py-1.5 font-mono text-[10px] text-text-muted hover:text-foreground transition hover:bg-bg-soft disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleTourNext}
+                  className="rounded bg-primary px-3 py-1.5 font-mono text-[10px] font-bold text-primary-foreground transition hover:opacity-90 cursor-pointer"
+                >
+                  {tourStep === TOUR_STEPS.length ? "Finish" : "Next Step"}
+                </button>
+              </div>
             </div>
 
           </div>
-        </div>
+        </>
       )}
     </div>
   );
