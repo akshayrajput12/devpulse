@@ -27,25 +27,25 @@ const TOUR_STEPS = [
   {
     targetId: "tour-new-review",
     title: "1. Automate PR Reviews",
-    content: "Click 'New review' to paste any GitHub Pull Request link. DevPulse analyzes your code changes automatically to find bugs, security risks, and optimization options before you merge.",
+    content: "Paste any GitHub Pull Request link to analyze your changes. DevPulse reviews code automatically to catch bugs, styling issues, and security vulnerabilities.\n\n🖱️ Action on Click: Opens a custom modal where you select scanner engines and trigger real-time commit audits.",
     tab: "reviews"
   },
   {
     targetId: "tour-github-tab",
     title: "2. Full Codebase Audits",
-    content: "Browse and audit your connected GitHub repositories directly. Under this mode, you can select any repo and execute a full codebase audit or scan specific directories.",
+    content: "Browse and scan your connected repositories on-demand. Perform deep static analysis on public or private projects without waiting for PR commits.\n\n🖱️ Action on Click: Activates the Repository tab, displaying repository stats, branch listings, and instant full codebase audits.",
     tab: "github"
   },
   {
     targetId: "tour-api-tab",
     title: "3. API & Backend Analyzer",
-    content: "Audit your API endpoints and backend services. The analyzer reviews routes and database queries to auto-detect N+1 loops, missing indices, and transaction concurrency hazards.",
+    content: "Audit database schema layers and endpoint routing efficiency. DevPulse reviews controller queries to prevent N+1 query loops, transaction deadlocks, and slow performance.\n\n🖱️ Action on Click: Redirects to the API analyser workspace where you can run deep SQL performance audits.",
     tab: "api"
   },
   {
     targetId: "tour-folder-nav",
     title: "4. Folder Architecture Audits",
-    content: "Click 'Folder Analysis' in the top navigation to run structure audits of your directories. It details package layers and dependency flows, generating clean modular checklists.",
+    content: "Examine directory layouts to eliminate circular file dependencies. DevPulse diagrams package layer structures and creates modular migration checklists.\n\n🖱️ Action on Click: Launches the structure auditor to visualize architectural health and review coupling fixes.",
     tab: "reviews"
   }
 ];

@@ -119,8 +119,8 @@ export function OnboardingTour({
 
   return (
     <>
-      {/* Backdrop Overlay with Theme Adaptive Shadows */}
-      <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] transition-all dark:bg-black/60" />
+      {/* Backdrop Overlay - Pure semi-transparent dark overlay to keep the focused target sharp and unblurred */}
+      <div className="fixed inset-0 z-[100] bg-black/35 transition-all dark:bg-black/55" />
 
       {/* Glowing Spotlight Focus Ring */}
       {targetRect && (
@@ -164,8 +164,19 @@ export function OnboardingTour({
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-3 mb-3.5">
-          <span className="text-xs font-bold text-primary flex items-center gap-1">
-            <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" /> Onboarding Guide
+          <span className="text-xs font-bold text-primary flex items-center gap-2">
+            <svg 
+              className="h-3.5 w-3.5 text-primary shrink-0 animate-pulse" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="3.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="8 4 16 12 8 20" />
+            </svg>
+            Onboarding Guide
           </span>
           <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">
             Step {tourStep} of {steps.length}
