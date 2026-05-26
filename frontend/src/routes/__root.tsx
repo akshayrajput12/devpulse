@@ -76,6 +76,7 @@ import { useAuth } from "@/lib/auth.js";
 import { supabase } from "@/integrations/supabase/client.js";
 import { useState, useEffect } from "react";
 import { ShieldAlert, KeyRound, Eye, EyeOff } from "lucide-react";
+import { BlockedModal } from "@/components/BlockedModal";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -149,29 +150,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   };
 
   if (profile?.is_blocked) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 font-sans text-center">
-        <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-[#111114] p-8 shadow-2xl">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 border border-red-500/30 text-red-400 mb-6 animate-pulse">
-            <ShieldAlert className="h-7 w-7" />
-          </div>
-          <h2 className="text-xl font-bold tracking-tight text-white mb-2">Account Suspended</h2>
-          <p className="text-xs text-text-muted leading-relaxed mb-6">
-            Your DevPulse developer account has been suspended by system administrative command due to profile audits or credit constraints.
-          </p>
-          <div className="rounded-xl border border-border bg-[#16161a] p-4 font-mono text-xs text-text-muted space-y-2 select-all text-center">
-            <div>✉ akshayrajput2616@gmail.com</div>
-            <div>📞 +91 9653814628</div>
-          </div>
-          <button
-            onClick={() => supabase.auth.signOut().then(() => window.location.reload())}
-            className="mt-6 w-full rounded-lg bg-red-500 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition cursor-pointer"
-          >
-            Logout Session
-          </button>
-        </div>
-      </div>
-    );
+    return <BlockedModal isBlocked={true} />;
   }
 
   if (user && profile && !profile.has_password && !fetchingProfile) {
