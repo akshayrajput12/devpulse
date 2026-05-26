@@ -330,7 +330,7 @@ export async function processReviewBackend(params: {
     }
 
     const appUrl = getRuntimeEnv("APP_URL") || "http://localhost:5173";
-    const { sendReviewCompleteEmail } = await import("../email/review-report.server");
+    const { sendReviewCompleteEmail } = await import("../email/review-report.server.js");
     await sendReviewCompleteEmail({
       requestId,
       reviewId: params.reviewId,
