@@ -122,10 +122,10 @@ function HeroStickyContent() {
       </ContainerAnimated>
 
       {/* Dynamic Scaling Video Container with Glow Border Highlight */}
-      <ContainerInset className={`max-h-[420px] w-full max-w-5xl rounded-xl border transition-all duration-500 overflow-hidden mt-6 ${
+      <ContainerInset className={`w-full transition-all duration-700 ease-in-out overflow-hidden mt-6 ${
         isFullSize 
-          ? "border-primary shadow-[0_0_50px_rgba(190,242,100,0.25)]" 
-          : "border-primary/20 shadow-xl"
+          ? "max-w-[420px] h-[420px] rounded-2xl shadow-[0_0_60px_rgba(190,242,100,0.3)]" 
+          : "max-w-5xl h-[420px] rounded-xl shadow-xl"
       }`}>
         <HeroVideo
           ref={videoRef}

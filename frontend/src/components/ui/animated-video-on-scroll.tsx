@@ -186,6 +186,7 @@ export const ContainerInset = React.forwardRef<
       insetXRange = [45, 0],
       roundednessRange = [1000, 16],
       transition,
+      children,
       ...props
     },
     ref
@@ -198,19 +199,39 @@ export const ContainerInset = React.forwardRef<
 
     const clipPath = useMotionTemplate`inset(${insetY}% ${insetX}% ${insetY}% ${insetX}% round ${roundedness}px)`
 
+    const borderTop = useMotionTemplate`${insetY}%`
+    const borderBottom = useMotionTemplate`${insetY}%`
+    const borderLeft = useMotionTemplate`${insetX}%`
+    const borderRight = useMotionTemplate`${insetX}%`
+    const borderRadiusVal = useMotionTemplate`${roundedness}px`
+
     return (
-      <motion.div
+      <div
         ref={ref}
-        className={cn(
-          "relative pointer-events-none overflow-hidden",
-          className
-        )}
-        style={{
-          clipPath,
-          ...style,
-        }}
+        className={cn("relative overflow-visible", className)}
+        style={style}
         {...props}
-      />
+      >
+        {/* Clipped content wrapper */}
+        <motion.div
+          className="w-full h-full overflow-hidden"
+          style={{ clipPath }}
+        >
+          {children}
+        </motion.div>
+
+        {/* Animated tracking border overlay */}
+        <motion.div
+          className="absolute pointer-events-none z-20 border-2 border-primary/80 shadow-[0_0_20px_rgba(132,204,22,0.25)]"
+          style={{
+            top: borderTop,
+            bottom: borderBottom,
+            left: borderLeft,
+            right: borderRight,
+            borderRadius: borderRadiusVal,
+          }}
+        />
+      </div>
     )
   }
 )
