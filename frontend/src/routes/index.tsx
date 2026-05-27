@@ -1365,7 +1365,7 @@ function Landing() {
     "description": "Stop merging bugs. Get severity-ranked AI code reviews, database indexes audits, and complete production safeguards in under 10 seconds.",
     "offers": {
       "@type": "Offer",
-      "price": "1499.00",
+      "price": "999.00",
       "priceCurrency": "INR"
     }
   };

@@ -145,7 +145,7 @@ SECTION 3: SOCIAL PROOF TICKER
 Full-width dark band, --bg-surface background, border top+bottom 1px --bg-subtle.
 Two rows of continuously scrolling logos/text:
 Row 1 (scrolls left): company names in --text-muted, monospace font — "Vercel · Stripe · Notion · Linear · Figma · Shopify · Atlassian ·" — repeating infinitely
-Row 2 (scrolls right, opposite direction): developer quotes in small italic — '"Caught 3 bugs before my lead saw the PR" · "Best ₹499 I spend monthly" · "Replaced 80% of my code review time" ·'
+Row 2 (scrolls right, opposite direction): developer quotes in small italic — '"Caught 3 bugs before my lead saw the PR" · "Best ₹999 I spend monthly" · "Replaced 80% of my code review time" ·'
 Both rows use CSS infinite marquee animation (transform: translateX, no JS).
 Hover on a row: animation pauses (animation-play-state: paused)
 Section has an edge fade: mask-image linear-gradient on both sides (left/right) to fade out content naturally.
@@ -314,18 +314,13 @@ Free Plan (₹0):
 - Features: 5 reviews/mo, 1 repo, 1 member
 - CTA: "Start for free"
 
-Pro Plan (₹499/mo) — HIGHLIGHTED:
+Pro Plan (₹999/mo) — HIGHLIGHTED:
 - Card: border: 1px solid --accent-blue, position: relative
 - "Most Popular" badge floating top-center: --grad-brand background, small, pill shape, translateY(-50%)
 - Subtle inner glow: box-shadow: 0 0 60px rgba(88,166,255,0.1) inset
 - Features: 100 reviews/mo, 10 repos, 1 member, webhook delivery, public links
 - CTA: "Upgrade to Pro" — --grad-brand button, full-width, shimmer on hover
 - Card hover: subtle scale(1.02)
-
-Team Plan (₹1,499/mo):
-- Card: --bg-surface, border: 1px solid --bg-subtle
-- Features: 500 reviews/mo, unlimited repos, 10 members, priority support
-- CTA: "Start Team trial"
 
 All cards animate in with stagger on scroll-in.
 Feature rows: checkmark (--accent-green Lucide Check icon) for included, dash for excluded.

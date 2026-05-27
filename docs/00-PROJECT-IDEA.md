@@ -55,8 +55,7 @@ DevPulse is a **micro SaaS** that gives developers instant, structured AI-powere
 | Plan | Price (INR) | Reviews/mo | Repos | Team members |
 |---|---|---|---|---|
 | Free | ₹0 | 5 | 1 | 1 |
-| Pro | ₹499/mo | 100 | 10 | 1 |
-| Team | ₹1,499/mo | 500 | unlimited | 10 |
+| Pro | ₹999/mo | 100 | 10 | 1 |
 
 Razorpay handles subscriptions natively — no custom billing logic needed.
 

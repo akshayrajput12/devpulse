@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DevPulse — Phase 1 Pitch Deck</title>
+<meta name="description" content="DevPulse AI Code Review SaaS — Phase 1 Pitch Deck. Problem, Solution, Tech Stack, and ICP." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* ── Design Tokens ─────────────────────────────────────────── */
+  :root {
+    --bg: #0A0A0B;
+    --bg-elev: #111114;
+    --bg-soft: #16161A;
+    --bg-code: #0F0F12;
+    --border: #1F1F25;
+    --border-faint: #18181D;
+    --text: #ECECEE;
+    --text-muted: #9C9CA4;
+    --text-faint: #5C5C66;
+    --accent: #BEF264;
+    --accent-soft: rgba(190,242,100,0.12);
+    --accent-ink: #0A0A0B;
+    --sev-crit: #FB7185;
+    --sev-high: #FB923C;
+    --sev-med: #FBBF24;
+    --sev-low: #60A5FA;
+    --sev-ok: #34D399;
+    --radius: 12px;
+    --transition: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Slide Navigation ────────────────────────────────────── */
+  .deck {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .nav-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(10,10,11,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.03em;
+  }
+
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-mark svg { width: 14px; height: 14px; fill: var(--accent-ink); }
+
+  .nav-pills {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+  }
+
+  .nav-pill {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .nav-pill:hover { color: var(--text); }
+  .nav-pill.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+  }
+
+  .slide-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Slide Layout ─────────────────────────────────────────── */
+  .slide {
+    display: none;
+    min-height: 100vh;
+    padding-top: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide.active { display: flex; flex-direction: column; }
+
+  .slide-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 1240px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 60px 40px;
+    gap: 48px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Grid bg */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border-faint) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-faint) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── Typography ──────────────────────────────────────────── */
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  h1.slide-title {
+    font-size: clamp(36px, 5vw, 72px);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+    color: var(--text);
+  }
+
+  h2.section-title {
+    font-size: clamp(24px, 3vw, 44px);
+    font-weight: 600;
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+  }
+
+  .highlight { color: var(--accent); }
+
+  .lead {
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--text-muted);
+    max-width: 60ch;
+  }
+
+  /* ── Cards ──────────────────────────────────────────────── */
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s var(--transition);
+  }
+
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  /* ── Severity Badges ────────────────────────────────────── */
+  .sev-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sev-crit { background: rgba(251,113,133,0.15); color: var(--sev-crit); border: 1px solid rgba(251,113,133,0.3); }
+  .sev-high { background: rgba(251,146,60,0.15); color: var(--sev-high); border: 1px solid rgba(251,146,60,0.3); }
+  .sev-med { background: rgba(251,191,36,0.15); color: var(--sev-med); border: 1px solid rgba(251,191,36,0.3); }
+  .sev-low { background: rgba(96,165,250,0.15); color: var(--sev-low); border: 1px solid rgba(96,165,250,0.3); }
+  .sev-ok { background: rgba(52,211,153,0.15); color: var(--sev-ok); border: 1px solid rgba(52,211,153,0.3); }
+
+  /* ── Tag pills ──────────────────────────────────────────── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* ── Slide 1: Problem ──────────────────────────────────── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 760px) { .problem-grid { grid-template-columns: 1fr; } }
+
+  .problem-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .problem-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+  }
+
+  .problem-card.p1::before { background: var(--sev-crit); }
+  .problem-card.p2::before { background: var(--sev-high); }
+  .problem-card.p3::before { background: var(--sev-med); }
+  .problem-card.p4::before { background: var(--accent); }
+
+  .problem-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+  }
+
+  .problem-heading {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .problem-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .stat-block {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ── Slide 2: Solution ──────────────────────────────────── */
+  .solution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 760px) { .solution-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .feature-card:hover { border-color: rgba(190,242,100,0.4); }
+
+  .feature-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .feature-name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  /* Live review demo mockup */
+  .review-mockup {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .mockup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .mockup-dots { display: flex; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red { background: rgba(251,113,133,0.7); }
+  .dot.yellow { background: rgba(251,191,36,0.7); }
+  .dot.green { background: rgba(52,211,153,0.7); }
+
+  .finding-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-faint);
+    font-size: 13px;
+    animation: fadeUp 0.4s var(--transition) backwards;
+  }
+
+  .finding-row:last-child { border-bottom: none; }
+
+  .finding-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .finding-conf {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  /* Health Score Ring */
+  .health-ring {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .ring-svg { width: 80px; height: 80px; }
+
+  .ring-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* ── Slide 3: Tech Stack ─────────────────────────────── */
+  .stack-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stack-layer {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+  }
+
+  .layer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+  }
+
+  .tech-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tech-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .tech-chip:hover { border-color: var(--accent); color: var(--text); }
+  .tech-chip .dot-accent { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 20px 0;
+    scrollbar-width: none;
+  }
+
+  .arch-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+
+  .arch-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    transition: border-color 0.2s;
+  }
+
+  .arch-icon:hover { border-color: var(--accent); }
+
+  .arch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .arch-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--text-faint);
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── Slide 4: ICP ────────────────────────────────────── */
+  .icp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) { .icp-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .icp-grid { grid-template-columns: 1fr; } }
+
+  .icp-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.25s, transform 0.2s var(--transition);
+  }
+
+  .icp-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+  }
+
+  .icp-avatar {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+  }
+
+  .icp-role {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .icp-pain {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .icp-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-top: auto;
+  }
+
+  /* Pricing comparison */
+  .pricing-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    margin-bottom: 8px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .pricing-row.pro-row {
+    border-color: var(--accent);
+    background: rgba(190,242,100,0.04);
+  }
+
+  .plan-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .plan-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .plan-details {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── Animations ─────────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.2); opacity: 0.6; }
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .blink { animation: blink 1.2s step-end infinite; }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .animate-in {
+    animation: fadeUp 0.5s var(--transition) backwards;
+  }
+
+  /* Stagger helper */
+  .animate-in:nth-child(1) { animation-delay: 0ms; }
+  .animate-in:nth-child(2) { animation-delay: 80ms; }
+  .animate-in:nth-child(3) { animation-delay: 160ms; }
+  .animate-in:nth-child(4) { animation-delay: 240ms; }
+  .animate-in:nth-child(5) { animation-delay: 320ms; }
+  .animate-in:nth-child(6) { animation-delay: 400ms; }
+
+  /* ── Progress ring ───────────────────────────────────────── */
+  .progress-ring {
+    stroke-dasharray: 201;
+    stroke-dashoffset: 201;
+    transition: stroke-dashoffset 1.5s ease;
+  }
+
+  /* ── User Flow section ──────────────────────────────────── */
+  .flow-container {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    overflow-x: auto;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    min-width: 800px;
+  }
+
+  .flow-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: calc(50% + 24px);
+    right: calc(-50% + 24px);
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--border) 100%);
+  }
+
+  .flow-step-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg-soft);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    position: relative;
+    z-index: 2;
+    transition: border-color 0.2s;
+  }
+
+  .flow-step-icon.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 4px rgba(190,242,100,0.1);
+  }
+
+  .flow-step-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 80px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Footer navigation ─────────────────────────────────── */
+  .slide-footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .btn:hover { transform: translateY(-1px); background: var(--bg-soft); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .btn-primary:hover { background: #d4fb6a; }
+
+  /* ── Slide header meta ─────────────────────────────────── */
+  .slide-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .slide-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(190,242,100,0.25);
+  }
+
+  /* ── Misc utilities ─────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .text-accent { color: var(--accent); }
+  .text-muted { color: var(--text-muted); }
+  .text-faint { color: var(--text-faint); }
+  .text-crit { color: var(--sev-crit); }
+  .text-high { color: var(--sev-high); }
+
+  .divider { width: 100%; height: 1px; background: var(--border); }
+
+  .tag-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  /* Live indicator */
+  .live-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--sev-ok);
+  }
+
+  .live-dot::before {
+    content: '';
+    display: block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--sev-ok);
+    animation: pulse-ring 2s ease-in-out infinite;
+  }
+
+  .quote-block {
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+
+  .quote-author {
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  /* Code snippet */
+  .code-snippet {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .code-bad { color: var(--sev-crit); background: rgba(251,113,133,0.08); }
+  .code-good { color: var(--sev-ok); }
+  .code-line { display: block; padding: 1px 0; }
+  .code-line.bad { background: rgba(251,113,133,0.08); color: var(--sev-crit); }
+  .code-line.good { background: rgba(52,211,153,0.06); color: var(--sev-ok); }
+  .code-comment { color: var(--text-faint); }
+
+  /* USP table */
+  .compare-table { width: 100%; border-collapse: collapse; }
+  .compare-table th, .compare-table td {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border-faint);
+    text-align: left;
+  }
+  .compare-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+  .compare-table .check { color: var(--sev-ok); }
+  .compare-table .cross { color: var(--sev-crit); }
+  .compare-table .devpulse-col { color: var(--accent); font-weight: 600; }
+
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────── -->
+<nav class="nav-bar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="1,9 4,5 7,11 10,3 13,8 16,6" fill="none" stroke="#0A0A0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    DevPulse
+    <span class="mono" style="font-size:11px; color:var(--text-faint);">/ Phase 1 Pitch</span>
+  </div>
+
+  <div class="nav-pills">
+    <button class="nav-pill active" onclick="goTo(0)" id="pill-0">01 Problem</button>
+    <button class="nav-pill" onclick="goTo(1)" id="pill-1">02 Solution</button>
+    <button class="nav-pill" onclick="goTo(2)" id="pill-2">03 Tech Stack</button>
+    <button class="nav-pill" onclick="goTo(3)" id="pill-3">04 ICP</button>
+  </div>
+
+  <div class="slide-counter" id="slide-counter">01 / 04</div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 1 — PROBLEM
+═══════════════════════════════════════════════════════════ -->
+<section class="slide active" id="slide-0">
+  <div class="grid-bg"></div>
+  <!-- Glow orbs -->
+  <div class="glow-orb" style="top:-10%; left:60%; width:600px; height:600px; background:radial-gradient(closest-side, rgba(251,113,133,0.07), transparent);"></div>
+  <div class="glow-orb" style="bottom:0; left:0; width:400px; height:400px; background:radial-gradient(closest-side, rgba(190,242,100,0.05), transparent);"></div>
+
+  <div class="slide-inner">
+    <!-- Header -->
+    <div class="animate-in">
+      <div class="slide-meta">
+        <span class="slide-tag">Slide 01</span>
+        <span class="eyebrow">The Problem</span>
+        <span class="live-dot">Phase 1 MVP</span>
+      </div>
+      <h1 class="slide-title" style="margin-top:16px;">
+        Senior devs are <span class="highlight">expensive</span>.<br />
+        Bugs are <span class="text-crit">not optional</span>.
+      </h1>
+      <p class="lead" style="margin-top:16px;">
+        Code review is the most critical — and most under-served — part of the software development lifecycle. The average PR waits <strong style="color:var(--text);">18 hours</strong> for review. Junior devs ship bugs because no one checks their work properly.
+      </p>
+    </div>
+
+    <!-- Problem cards grid -->
+    <div class="problem-grid">
+      <div class="problem-card p1 animate-in">
+        <div class="problem-num">Pain 01 · Cost</div>
+        <div class="problem-heading">Senior engineers cost ₹30–80 L/yr</div>
+        <p class="problem-body">
+          Dedicated reviewers are a luxury small teams and solo devs can't afford. So PRs get approved after a "quick scan." Looks fine. Gets merged.
+        </p>
+        <div class="stat-block">
+          <span class="stat-num text-crit">₹80L</span>
+          <span class="stat-label">avg. senior dev salary / year</span>
+        </div>
+      </div>
+
+      <div class="problem-card p2 animate-in">
+        <div class="problem-num">Pain 02 · Latency</div>
+        <div class="problem-heading">18-hour average PR review wait</div>
+        <p class="problem-body">
+          Slow reviews create context-switch costs. Developers lose momentum. Bugs accumulate. Features ship late. Entire sprint velocity tanks.
+        </p>
+        <div class="stat-block">
+          <span class="stat-num" style="color:var(--sev-high);">18hrs</span>
+          <span class="stat-label">average PR wait time</span>
+        </div>
+      </div>
+
+      <div class="problem-card p3 animate-in">
+        <div class="problem-num">Pain 03 · Context blindness</div>
+        <div class="problem-heading">Existing AI tools review diffs in isolation</div>
+        <p class="problem-body">
+          CodeRabbit, GitHub Copilot PR — they see the diff. They don't know your folder contract, your validation library, your auth strategy, or your production requirements.
+        </p>
+        <div class="code-snippet" style="margin-top:12px; font-size:11px;">
+          <span class="code-line bad">// CodeRabbit: "variable name too long"</span>
+          <span class="code-line" style="color:var(--text-faint);">// DevPulse: "new route has no auth middleware</span>
+          <span class="code-line" style="color:var(--text-faint);">//  + missing Zod validation + N+1 query"</span>
+        </div>
+      </div>
+
+      <div class="problem-card p4 animate-in">
+        <div class="problem-num">Pain 04 · India-specific gap</div>
+        <div class="problem-heading">No India-first code review tool exists</div>
+        <p class="problem-body">
+          CodeRabbit charges $24/seat in USD. That's ₹2,000/month per developer with currency fees. No UPI. No INR billing. No support for Indian dev teams.
+        </p>
+        <div class="stat-block">
+          <span class="stat-num text-accent">₹999</span>
+          <span class="stat-label">DevPulse Pro — INR, UPI, Razorpay</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real incident quote -->
+    <div class="animate-in">
+      <div class="quote-block">
+        "Junior developer pushes code. PR gets approved after a quick scan. Three days later: database CPU at 95%. Root cause: an N+1 query that was right there in the diff. Nobody caught it."
+        <div class="quote-author">— A story from every engineering team that has ever shipped fast</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="slide-footer">
+    <span class="mono text-faint" style="font-size:12px;">devpulse.app · Phase 1 · May 2026</span>
+    <button class="btn btn-primary" onclick="goTo(1)">Solution →</button>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 2 — SOLUTION
+═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-1">
+  <div class="grid-bg"></div>
+  <div class="glow-orb" style="top:0; left:50%; transform:translateX(-50%); width:800px; height:400px; background:radial-gradient(closest-side, rgba(190,242,100,0.06), transparent);"></div>
+
+  <div class="slide-inner">
+    <!-- Header -->
+    <div class="animate-in">
+      <div class="slide-meta">
+        <span class="slide-tag">Slide 02</span>
+        <span class="eyebrow">Solution & Key Features</span>
+      </div>
+      <h1 class="slide-title" style="margin-top:16px;">
+        AI code reviews that<br /><span class="highlight">survive review.</span><span class="blink" style="font-weight:300; margin-left:4px;">|</span>
+      </h1>
+      <p class="lead" style="margin-top:12px;">
+        Paste a GitHub PR URL → get a severity-ranked review with line-by-line fixes in <strong style="color:var(--text);">under 10 seconds</strong>. Stack-aware. Production-grade. Built India-first.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left: Feature grid -->
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-faint); margin-bottom:14px;">MVP Features — Phase 1</div>
+        <div class="solution-grid">
+          <div class="feature-card animate-in">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-name">On-Demand PR Review</div>
+            <div class="feature-desc">Paste any GitHub PR URL → instant AI review. No install needed.</div>
+          </div>
+          <div class="feature-card animate-in">
+            <div class="feature-icon">🤖</div>
+            <div class="feature-name">GitHub App Auto-Review</div>
+            <div class="feature-desc">Install once. Every PR auto-reviewed the moment it opens.</div>
+          </div>
+          <div class="feature-card animate-in">
+            <div class="feature-icon">🛡️</div>
+            <div class="feature-name">Severity Ranking</div>
+            <div class="feature-desc">CRIT · HIGH · MED · LOW. Fix what matters first, not last.</div>
+          </div>
+          <div class="feature-card animate-in">
+            <div class="feature-icon">📊</div>
+            <div class="feature-name">Health Score Dashboard</div>
+            <div class="feature-desc">0–100 PR health score. Live Supabase Realtime updates.</div>
+          </div>
+          <div class="feature-card animate-in">
+            <div class="feature-icon">🔗</div>
+            <div class="feature-name">Public Share Links</div>
+            <div class="feature-desc">Read-only review URLs — share with clients or leads. Like Notion.</div>
+          </div>
+          <div class="feature-card animate-in">
+            <div class="feature-icon">📬</div>
+            <div class="feature-name">Commit Watcher</div>
+            <div class="feature-desc">Monitor any branch. Every commit reviewed — not just PRs.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Live demo mockup + user flow -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Review mockup card -->
+        <div class="review-mockup animate-in">
+          <div class="mockup-header">
+            <div class="mockup-dots">
+              <div class="dot red"></div>
+              <div class="dot yellow"></div>
+              <div class="dot green"></div>
+            </div>
+            <span>devpulse — review stream</span>
+            <span class="live-dot">active</span>
+          </div>
+
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border-faint); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">feat(search): add user search endpoint</div>
+              <div class="mono" style="font-size:11px; color:var(--text-faint); margin-top:2px;">acme/api-server#1284 · @nivedh · 12 files +482/-67</div>
+            </div>
+            <!-- Health score ring mini -->
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--border)" stroke-width="4"/>
+              <circle cx="26" cy="26" r="20" fill="none" stroke="var(--accent)" stroke-width="4"
+                stroke-dasharray="125.6" stroke-dashoffset="33.9"
+                stroke-linecap="round"
+                transform="rotate(-90 26 26)"/>
+              <text x="26" y="31" text-anchor="middle" fill="var(--accent)" font-family="JetBrains Mono" font-size="11" font-weight="700">73</text>
+            </svg>
+          </div>
+
+          <div class="finding-row" style="animation-delay:0ms">
+            <span class="sev-badge sev-crit">CRIT</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12px; font-weight:500;">SQL injection in user search query</div>
+              <div class="finding-file">api/search.ts:42</div>
+            </div>
+            <div class="finding-conf">98%</div>
+          </div>
+          <div class="finding-row" style="animation-delay:120ms">
+            <span class="sev-badge sev-high">HIGH</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12px; font-weight:500;">Race condition — uncached cache fill</div>
+              <div class="finding-file">lib/cache.ts:18</div>
+            </div>
+            <div class="finding-conf">91%</div>
+          </div>
+          <div class="finding-row" style="animation-delay:240ms">
+            <span class="sev-badge sev-med">MED</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12px; font-weight:500;">N+1 query inside for…of loop</div>
+              <div class="finding-file">routes/posts.ts:67</div>
+            </div>
+            <div class="finding-conf">87%</div>
+          </div>
+          <div class="finding-row" style="animation-delay:360ms">
+            <span class="sev-badge sev-low">LOW</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12px; font-weight:500;">Unhandled promise — Slack call lost</div>
+              <div class="finding-file">lib/notify.ts:23</div>
+            </div>
+            <div class="finding-conf">82%</div>
+          </div>
+
+          <!-- Done chip -->
+          <div style="padding:10px 16px; display:flex; align-items:center; gap:8px; border-top:1px solid var(--border-faint);">
+            <span class="sev-badge sev-ok">✓ DONE</span>
+            <span class="mono" style="font-size:11px; color:var(--text-muted);">review complete · 6.4s</span>
+            <span class="mono" style="font-size:11px; color:var(--text-faint); margin-left:auto;">4 findings</span>
+          </div>
+        </div>
+
+        <!-- vs. CodeRabbit compare table -->
+        <div class="card animate-in" style="padding:16px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); margin-bottom:12px;">DevPulse vs. CodeRabbit</div>
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>DevPulse</th>
+                <th>CodeRabbit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Stack-aware context</td>
+                <td class="devpulse-col check">✓ Yes</td>
+                <td class="cross">✗ Diff only</td>
+              </tr>
+              <tr>
+                <td>Production Shield</td>
+                <td class="devpulse-col check">✓ Missing checks</td>
+                <td class="cross">✗ No</td>
+              </tr>
+              <tr>
+                <td>Commit Watcher</td>
+                <td class="devpulse-col check">✓ Per-branch</td>
+                <td class="cross">✗ PR-only</td>
+              </tr>
+              <tr>
+                <td>INR + UPI billing</td>
+                <td class="devpulse-col check">✓ ₹999/mo</td>
+                <td class="cross">✗ $24 USD</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- User journey flow -->
+    <div class="animate-in">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-faint); margin-bottom:14px;">Clear User Flow / Product Journey</div>
+      <div class="flow-container">
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-icon active">🔑</div>
+            <div class="flow-step-label">Sign in GitHub OAuth</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">⚙️</div>
+            <div class="flow-step-label">Install GitHub App</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">📋</div>
+            <div class="flow-step-label">Open / Paste PR URL</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">⏳</div>
+            <div class="flow-step-label">Job created in Supabase</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">🧠</div>
+            <div class="flow-step-label">Gemini AI reviews diff</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">📡</div>
+            <div class="flow-step-label">Realtime push to client</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon active">✅</div>
+            <div class="flow-step-label">Review live in dashboard</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon">🔗</div>
+            <div class="flow-step-label">Share public review link</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-icon">💳</div>
+            <div class="flow-step-label">Razorpay upgrade (optional)</div>
+          </div>
+        </div>
+        <div style="margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-align:center;">
+          ⏱ Total time from PR open to review delivered: <strong style="color:var(--accent);">under 30 seconds</strong> · Setup time: <strong style="color:var(--accent);">3 minutes</strong> · Code you write: <strong style="color:var(--accent);">zero</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <button class="btn" onclick="goTo(0)">← Problem</button>
+    <button class="btn btn-primary" onclick="goTo(2)">Tech Stack →</button>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 3 — TECH STACK
+═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-2">
+  <div class="grid-bg"></div>
+  <div class="glow-orb" style="top:20%; right:0; width:500px; height:500px; background:radial-gradient(closest-side, rgba(190,242,100,0.05), transparent);"></div>
+
+  <div class="slide-inner">
+    <div class="animate-in">
+      <div class="slide-meta">
+        <span class="slide-tag">Slide 03</span>
+        <span class="eyebrow">Tools & Tech Stack</span>
+      </div>
+      <h1 class="slide-title" style="margin-top:16px;">
+        Built on infra you<br /><span class="highlight">already trust.</span>
+      </h1>
+      <p class="lead" style="margin-top:12px;">
+        Every tool chosen deliberately. Every free tier maximized. Production-grade architecture that runs at near-zero cost on a free plan.
+      </p>
+    </div>
+
+    <!-- Architecture flow -->
+    <div class="card animate-in" style="padding:20px;">
+      <div class="layer-label">End-to-End Architecture Flow</div>
+      <div class="arch-flow">
+        <div class="arch-node">
+          <div class="arch-icon">⚛️</div>
+          <div class="arch-label">Vite + React SPA</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">🔐</div>
+          <div class="arch-label">Supabase Auth (GitHub OAuth)</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">🗄️</div>
+          <div class="arch-label">Supabase Postgres + RLS</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">⚡</div>
+          <div class="arch-label">Express Backend API</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">🧠</div>
+          <div class="arch-label">Gemini 2.5 Flash AI</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">📡</div>
+          <div class="arch-label">Supabase Realtime</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node">
+          <div class="arch-icon">👁️</div>
+          <div class="arch-label">Live Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stack layers -->
+    <div class="stack-flow animate-in">
+      <div class="stack-layer">
+        <div class="layer-label">Frontend</div>
+        <div class="tech-chips">
+          <div class="tech-chip"><div class="dot-accent"></div>React + Vite</div>
+          <div class="tech-chip"><div class="dot-accent"></div>TanStack Router</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Tailwind CSS v4</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Framer Motion</div>
+          <div class="tech-chip"><div class="dot-accent"></div>shadcn/ui (Radix)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Space Grotesk + JetBrains Mono</div>
+        </div>
+      </div>
+
+      <div class="stack-layer">
+        <div class="layer-label">Backend & Data</div>
+        <div class="tech-chips">
+          <div class="tech-chip"><div class="dot-accent"></div>Node.js Express Server</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Supabase Postgres</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Supabase Realtime (no polling)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Supabase Auth + RLS</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Upstash Redis (rate limiting + cache)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>TypeScript (strict mode)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Zod validation</div>
+        </div>
+      </div>
+
+      <div class="stack-layer">
+        <div class="layer-label">AI & External APIs</div>
+        <div class="tech-chips">
+          <div class="tech-chip"><div class="dot-accent"></div>Gemini 2.5 Flash (1M context)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>GPT-4.1 Nano (triage gate)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>GitHub REST API + GitHub App</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Resend (transactional email)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Razorpay (INR payments + UPI)</div>
+        </div>
+      </div>
+
+      <div class="stack-layer">
+        <div class="layer-label">Infrastructure & DevOps</div>
+        <div class="tech-chips">
+          <div class="tech-chip"><div class="dot-accent"></div>Vercel (frontend hosting)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Render / Railway (Express backend)</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Cloudflare CDN + DDoS protection</div>
+          <div class="tech-chip"><div class="dot-accent"></div>GitHub Actions CI/CD</div>
+          <div class="tech-chip"><div class="dot-accent"></div>Supabase Migrations (16 production schemas)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI pipeline cost table -->
+    <div class="animate-in">
+      <div class="grid-2">
+        <div class="card" style="padding:20px;">
+          <div class="layer-label" style="margin-bottom:12px;">Multi-Triage AI Pipeline</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="flex-shrink:0; width:28px; height:28px; border-radius:6px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-size:14px;">1️⃣</div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">Pattern Triage (free)</div>
+                <div class="text-faint" style="font-size:12px;">Skip lockfiles, SVGs, dist — instant, no LLM cost</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="flex-shrink:0; width:28px; height:28px; border-radius:6px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-size:14px;">2️⃣</div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">GPT-4.1 Nano gate (₹0.00002/file)</div>
+                <div class="text-faint" style="font-size:12px;">Classify: TRIVIAL vs REVIEW — saves 30–40% LLM calls</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="flex-shrink:0; width:28px; height:28px; border-radius:6px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-size:14px;">3️⃣</div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">Gemini 2.5 Flash deep review</div>
+                <div class="text-faint" style="font-size:12px;">1M context — entire PR diff, structured JSON output</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="flex-shrink:0; width:28px; height:28px; border-radius:6px; background:var(--accent-soft); display:flex; align-items:center; justify-content:center; font-size:14px;">4️⃣</div>
+              <div>
+                <div style="font-size:13px; font-weight:600;">Upstash Redis similarity cache</div>
+                <div class="text-faint" style="font-size:12px;">24hr TTL — saves ~20% on iterative commits</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <div class="layer-label" style="margin-bottom:12px;">Cost per Review</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div class="pricing-row" style="padding:10px 14px; margin-bottom:0;">
+              <span style="font-size:13px;">Average PR (8 files)</span>
+              <span class="mono text-accent" style="font-weight:700; font-size:14px;">₹0.018</span>
+            </div>
+            <div class="pricing-row" style="padding:10px 14px; margin-bottom:0;">
+              <span style="font-size:13px;">Large PR (30 files)</span>
+              <span class="mono text-accent" style="font-weight:700; font-size:14px;">₹0.06</span>
+            </div>
+            <div class="pricing-row" style="padding:10px 14px; margin-bottom:0;">
+              <span style="font-size:13px;">Small commit (2 files)</span>
+              <span class="mono text-accent" style="font-weight:700; font-size:14px;">₹0.004</span>
+            </div>
+            <div class="pricing-row" style="padding:10px 14px; margin-bottom:0;">
+              <span style="font-size:13px;">Trivial diff (lockfiles)</span>
+              <span class="mono text-accent" style="font-weight:700; font-size:14px;">₹0.00002</span>
+            </div>
+          </div>
+          <div style="margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);">
+            ↳ Profitable at <strong style="color:var(--accent);">₹999/mo Pro</strong> with &gt;50x margin on average usage
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security highlights -->
+    <div class="animate-in">
+      <div class="card" style="padding:20px; border-color:rgba(190,242,100,0.2); background:rgba(190,242,100,0.02);">
+        <div class="layer-label" style="color:var(--accent); margin-bottom:12px;">Production Security Checklist</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:8px;">
+          <div class="pill">✅ Supabase RLS on every table</div>
+          <div class="pill">✅ GitHub webhook HMAC-SHA256</div>
+          <div class="pill">✅ Razorpay signature verify</div>
+          <div class="pill">✅ Upstash Redis rate limiting</div>
+          <div class="pill">✅ Service role key never in browser</div>
+          <div class="pill">✅ GitHub tokens encrypted (pgcrypto)</div>
+          <div class="pill">✅ All inputs validated with Zod</div>
+          <div class="pill">✅ CORS locked to devpulse.app</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <button class="btn" onclick="goTo(1)">← Solution</button>
+    <button class="btn btn-primary" onclick="goTo(3)">ICP →</button>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     SLIDE 4 — ICP (Ideal Customer Profile)
+═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-3">
+  <div class="grid-bg"></div>
+  <div class="glow-orb" style="bottom:0; left:30%; width:700px; height:400px; background:radial-gradient(closest-side, rgba(190,242,100,0.05), transparent);"></div>
+
+  <div class="slide-inner">
+    <div class="animate-in">
+      <div class="slide-meta">
+        <span class="slide-tag">Slide 04</span>
+        <span class="eyebrow">Ideal Customer Profile</span>
+      </div>
+      <h1 class="slide-title" style="margin-top:16px;">
+        Who DevPulse<br /><span class="highlight">is built for.</span>
+      </h1>
+      <p class="lead" style="margin-top:12px;">
+        Targeting Indian dev teams first — where the price sensitivity is highest, the market is underserved, and the developer density is exploding. <strong style="color:var(--text);">7M+ developers in India.</strong> Zero India-first AI review tools.
+      </p>
+    </div>
+
+    <!-- ICP Cards -->
+    <div class="icp-grid">
+      <div class="icp-card animate-in">
+        <div class="icp-avatar">👨‍💻</div>
+        <div class="icp-role">Solo Developer / Indie Hacker</div>
+        <div class="icp-pain">No reviewer. Ships bugs nobody catches. Has to self-review everything under time pressure. Misses architectural issues constantly.</div>
+        <div class="tag-strip">
+          <span class="pill">₹0–999/mo budget</span>
+          <span class="pill">1–5 PRs/week</span>
+        </div>
+        <div class="icp-value">AI senior engineer on demand — 24/7, ₹0 on free tier</div>
+      </div>
+
+      <div class="icp-card animate-in" style="border-color:rgba(190,242,100,0.25); background:rgba(190,242,100,0.02);">
+        <div class="icp-avatar">🚀</div>
+        <div class="icp-role">Startup CTO (3–10 engineers)</div>
+        <div class="icp-pain">Team too small for dedicated review bandwidth. PRs get rubber-stamped. Technical debt compounds. CTO becomes the bottleneck on every merge.</div>
+        <div class="tag-strip">
+          <span class="pill">₹999/mo Pro</span>
+          <span class="pill">20–50 PRs/week</span>
+        </div>
+        <div class="icp-value" style="background:rgba(190,242,100,0.15);">Every PR reviewed before merge — automatically, stack-specific</div>
+      </div>
+
+      <div class="icp-card animate-in">
+        <div class="icp-avatar">🎓</div>
+        <div class="icp-role">Junior / Bootcamp Developer</div>
+        <div class="icp-pain">Gets PRs approved but ships bad patterns. Never knows why. Nobody explains the N+1 query or the missing auth check. Repeats the same mistakes.</div>
+        <div class="tag-strip">
+          <span class="pill">Free tier</span>
+          <span class="pill">Learning stage</span>
+        </div>
+        <div class="icp-value">Every review teaches the right pattern — specific, with file and line</div>
+      </div>
+
+      <div class="icp-card animate-in">
+        <div class="icp-avatar">💼</div>
+        <div class="icp-role">Freelancer / Contractor</div>
+        <div class="icp-pain">Clients ask "is this production ready?" and they can't prove it. No way to demonstrate quality beyond "trust me." Wins and loses projects on this.</div>
+        <div class="tag-strip">
+          <span class="pill">₹999/mo Pro</span>
+          <span class="pill">Multiple repos</span>
+        </div>
+        <div class="icp-value">Shareable review report with score — "here's the proof"</div>
+      </div>
+
+      <div class="icp-card animate-in">
+        <div class="icp-avatar">🏢</div>
+        <div class="icp-role">Dev Agency (10–50 devs)</div>
+        <div class="icp-pain">Code quality varies wildly by developer. No consistency. Senior devs spend 30% of time on reviews. Can't scale without a process.</div>
+        <div class="tag-strip">
+          <span class="pill">₹999/mo Pro</span>
+          <span class="pill">100+ PRs/week</span>
+        </div>
+        <div class="icp-value">Team analytics — recurring patterns, developer improvement tracking</div>
+      </div>
+
+      <div class="icp-card animate-in">
+        <div class="icp-avatar">🌐</div>
+        <div class="icp-role">Open Source Maintainer</div>
+        <div class="icp-pain">Receives PRs from contributors worldwide. No time to deeply review every change. Can't run a quality gate manually at scale.</div>
+        <div class="tag-strip">
+          <span class="pill">Free / Pro</span>
+          <span class="pill">Public repos</span>
+        </div>
+        <div class="icp-value">GitHub App auto-reviews every contributor PR — zero maintainer effort</div>
+      </div>
+    </div>
+
+    <!-- Revenue model + market -->
+    <div class="grid-2 animate-in">
+      <!-- Pricing tiers -->
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-faint); margin-bottom:12px;">Revenue Model — INR First</div>
+        <div class="pricing-row">
+          <div>
+            <div class="plan-name">Free</div>
+            <div class="plan-details">5 reviews/mo · 1 repo</div>
+          </div>
+          <div class="plan-price">₹0</div>
+        </div>
+        <div class="pricing-row pro-row">
+          <div>
+            <div class="plan-name" style="color:var(--accent);">Pro ⭐</div>
+            <div class="plan-details">100 reviews/mo · 10 repos · webhook delivery</div>
+          </div>
+          <div class="plan-price">₹999 <span style="font-size:12px; color:var(--text-muted);">/mo</span></div>
+        </div>
+        <div style="margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);">
+          Razorpay · UPI · Cards · Net Banking · No per-seat math · No USD conversion
+        </div>
+      </div>
+
+      <!-- Market opportunity -->
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-faint); margin-bottom:12px;">Market Opportunity</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="card" style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Indian Developers</div>
+              <div style="font-size:12px; color:var(--text-muted);">Total addressable market</div>
+            </div>
+            <div class="mono" style="font-size:24px; font-weight:700; color:var(--accent);">7M+</div>
+          </div>
+          <div class="card" style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Startup + Agency devs</div>
+              <div style="font-size:12px; color:var(--text-muted);">Serviceable addressable market</div>
+            </div>
+            <div class="mono" style="font-size:24px; font-weight:700; color:var(--accent);">500K</div>
+          </div>
+          <div class="card" style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Revenue at 1% SAM Pro</div>
+              <div style="font-size:12px; color:var(--text-muted);">5,000 users × ₹999/mo</div>
+            </div>
+            <div class="mono" style="font-size:24px; font-weight:700; color:var(--accent);">₹49.9L/mo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- One-liner + tagline -->
+    <div class="animate-in">
+      <div class="quote-block" style="text-align:center; max-width:900px; margin:0 auto;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); font-style:normal; text-transform:uppercase; letter-spacing:0.1em;">The One-Line Pitch</span>
+        <br /><br />
+        "CodeRabbit reviews your diff. <strong style="color:var(--text); font-style:normal;">DevPulse reviews your entire engineering process.</strong>"
+        <div class="quote-author" style="font-size:13px; margin-top:12px;">AI code review that knows your codebase — not just your diff. Built for Indian dev teams. ₹999/month.</div>
+      </div>
+    </div>
+
+    <!-- Roadmap phases preview -->
+    <div class="animate-in">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:var(--text-faint); margin-bottom:12px;">Roadmap Snapshot</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="card" style="flex:1; min-width:180px; padding:16px; border-color:rgba(190,242,100,0.3); background:rgba(190,242,100,0.03);">
+          <div class="sev-badge sev-ok" style="margin-bottom:8px;">Phase 1 · NOW</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">MVP — Shipping</div>
+          <div style="font-size:12px; color:var(--text-muted);">PR reviews, Commit Watcher, Dashboard, Payments</div>
+        </div>
+        <div class="card" style="flex:1; min-width:180px; padding:16px;">
+          <div class="sev-badge sev-low" style="margin-bottom:8px;">Phase 2 · Q3</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">Teams & Stack Config</div>
+          <div style="font-size:12px; color:var(--text-muted);">.devpulse.json, Team analytics, Slack integration</div>
+        </div>
+        <div class="card" style="flex:1; min-width:180px; padding:16px;">
+          <div class="sev-badge sev-med" style="margin-bottom:8px;">Phase 3 · Q4</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">AI Editor</div>
+          <div style="font-size:12px; color:var(--text-muted);">Monaco Editor, inline fix, generate tests</div>
+        </div>
+        <div class="card" style="flex:1; min-width:180px; padding:16px;">
+          <div class="sev-badge sev-high" style="margin-bottom:8px;">Phase 4 · 2027</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:4px;">API Analyser</div>
+          <div style="font-size:12px; color:var(--text-muted);">OpenAPI import, OWASP scan, load simulation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <button class="btn" onclick="goTo(2)">← Tech Stack</button>
+    <a href="/dashboard" class="btn btn-primary">Open MVP Dashboard →</a>
+  </div>
+</section>
+
+
+<!-- ── JavaScript Controller ─────────────────────────────── -->
+<script>
+  let current = 0;
+  const total = 4;
+
+  function goTo(n) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    document.getElementById('pill-' + current).classList.remove('active');
+    current = n;
+    document.getElementById('slide-' + current).classList.add('active');
+    document.getElementById('pill-' + current).classList.add('active');
+    document.getElementById('slide-counter').textContent =
+      String(current + 1).padStart(2, '0') + ' / 0' + total;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Trigger health ring animation on slide 2 (solution)
+    if (current === 1) triggerRingAnim();
+  }
+
+  function triggerRingAnim() {
+    // The SVG circle animates on render via CSS; no-op here
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      if (current < total - 1) goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      if (current > 0) goTo(current - 1);
+    }
+  });
+
+  // Animate finding rows on slide 2 visibility
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.finding-row').forEach((row, i) => {
+          row.style.animationDelay = (i * 150) + 'ms';
+        });
+      }
+    });
+  });
+
+  document.querySelectorAll('.review-mockup').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

@@ -108,7 +108,7 @@ So they give generic advice. Sometimes wrong for your setup. Always missing the 
 
 Or for India-specific context:
 
-> **"AI code review that knows your codebase — not just your diff. Built for Indian dev teams. ₹499/month."**
+> **"AI code review that knows your codebase — not just your diff. Built for Indian dev teams. ₹999/month."**
 
 ---
 
@@ -715,8 +715,7 @@ User Operations
 | Plan | Monthly | PR Reviews | Repos | Team members |
 |---|---|---|---|---|
 | **Free** | ₹0 | 5/mo | 1 | 1 |
-| **Pro** | ₹499 | 100/mo | 10 | 1 |
-| **Team** | ₹1,499 | 500/mo | Unlimited | 10 |
+| **Pro** | ₹999 | 100/mo | 10 | 1 |
 
 ---
 

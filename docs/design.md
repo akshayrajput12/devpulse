@@ -105,7 +105,7 @@ Each `.jsx` runs in its own Babel script scope; cross-file sharing goes through 
 4. **What it catches** — selectable list of 4 *real* bugs (SQL injection, race condition, unhandled promise, N+1). Each shows the bad code, AI explanation, and a suggested fix when applicable.
 5. **Health score showcase** — picker for the 4 visualizations
 6. **Features grid** — 6 feature cards + an "under the hood" stack strip
-7. **Pricing** — Free / Pro ₹499 / Team ₹1,499, INR-first
+7. **Pricing** — Free / Pro ₹999, INR-first
 8. **CTA section** — full-width card with a pulse-waveform bg motif
 9. **Footer** — 4 columns + status indicator
 
