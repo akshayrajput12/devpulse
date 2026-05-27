@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
@@ -13,13 +13,15 @@ import {
   BookOpen,
   Edit2,
   Trash2,
-  CheckCircle,
   Eye,
   X,
   FileText,
   Save,
   Globe,
-  Settings,
+  Clock,
+  Calendar,
+  ImageOff,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -440,15 +442,42 @@ function AdminBlog() {
 
               <div className="space-y-1">
                 <label className="font-mono text-[10px] uppercase text-text-muted font-bold">
-                  Cover Image URL (Optional)
+                  Cover Image URL <span className="normal-case text-text-faint">(postimage.cc, imgur, etc.)</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="https://images.unsplash.com/... or absolute CDN path"
+                  placeholder="https://i.postimg.cc/... or any CDN URL"
                   value={coverImageUrl}
                   onChange={(e) => setCoverImageUrl(e.target.value)}
                   className="w-full rounded border border-border bg-bg-soft/40 px-3 py-2 text-xs font-mono focus:border-primary/50 focus:outline-none"
                 />
+                {/* Live image preview */}
+                {coverImageUrl && (
+                  <div className="mt-2 relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-bg-soft">
+                    <img
+                      src={coverImageUrl}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const parent = (e.target as HTMLImageElement).parentElement;
+                        if (parent) {
+                          parent.innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-2 text-text-faint"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span class="font-mono text-[10px]">Image failed to load</span></div>`;
+                        }
+                      }}
+                    />
+                    <div className="absolute top-2 right-2">
+                      <a
+                        href={coverImageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded bg-bg-elev/90 border border-border px-2 py-0.5 font-mono text-[9px] text-text-muted hover:text-primary"
+                      >
+                        <ExternalLink className="h-2.5 w-2.5" /> Open
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -501,85 +530,166 @@ function AdminBlog() {
           </form>
         </div>
       ) : (
-        /* Blog Posts List Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loading ? (
-            <div className="col-span-full flex h-48 items-center justify-center">
-              <DevPulseLoader />
+        /* Blog Posts List Grid — Rich Preview Cards */
+        <div>
+          {/* Stats row */}
+          {!loading && posts.length > 0 && (
+            <div className="flex items-center gap-4 mb-5 font-mono text-[10px] text-text-muted">
+              <span><span className="text-foreground font-bold">{posts.length}</span> articles total</span>
+              <span>·</span>
+              <span><span className="text-green-400 font-bold">{posts.filter(p => p.published).length}</span> published</span>
+              <span>·</span>
+              <span><span className="text-text-faint font-bold">{posts.filter(p => !p.published).length}</span> drafts</span>
             </div>
-          ) : posts.length === 0 ? (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-16 text-center">
-              <BookOpen className="h-10 w-10 text-text-muted/40 mb-4" />
-              <h3 className="text-sm font-semibold mb-1">No articles found</h3>
-              <p className="text-xs text-text-muted mb-4 max-w-[28ch]">
-                Create your first article to start writing.
-              </p>
-              <button
-                onClick={handleCreateNew}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-mono font-bold text-primary-foreground"
-              >
-                New Article
-              </button>
-            </div>
-          ) : (
-            posts.map((post) => (
-              <div
-                key={post.id}
-                className="rounded-xl border border-border bg-bg-elev p-5 flex flex-col justify-between hover:border-primary/20 transition-colors"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="font-mono text-[8px] text-text-muted uppercase">
-                      {new Date(post.created_at).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider ${
-                        post.published
-                          ? "bg-green-400/10 text-green-400 border border-green-400/20"
-                          : "bg-bg-soft text-text-muted border border-border"
-                      }`}
-                    >
-                      {post.published ? "published" : "draft"}
-                    </span>
-                  </div>
-
-                  <h3 className="font-bold text-base text-foreground line-clamp-1 mb-1.5">
-                    {post.title}
-                  </h3>
-
-                  <p className="text-xs text-text-muted line-clamp-3 mb-4 leading-relaxed">
-                    {post.excerpt}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border/40">
-                  <div className="font-mono text-[9px] text-text-faint truncate max-w-[120px]">
-                    /{post.slug}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handleEdit(post)}
-                      className="p-1 rounded bg-bg-soft text-text-muted hover:text-primary transition-colors border border-border"
-                      title="Edit article"
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(post)}
-                      className="p-1 rounded bg-red-400/5 text-red-400 hover:bg-red-400/10 transition-colors border border-red-400/15"
-                      title="Delete article"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
           )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {loading ? (
+              <div className="col-span-full flex h-48 items-center justify-center">
+                <DevPulseLoader />
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-16 text-center">
+                <BookOpen className="h-10 w-10 text-text-muted/40 mb-4" />
+                <h3 className="text-sm font-semibold mb-1">No articles found</h3>
+                <p className="text-xs text-text-muted mb-4 max-w-[28ch]">
+                  Create your first article to start writing.
+                </p>
+                <button
+                  onClick={handleCreateNew}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-mono font-bold text-primary-foreground"
+                >
+                  New Article
+                </button>
+              </div>
+            ) : (
+              posts.map((post) => {
+                const wordCount = post.excerpt.split(/\s+/).length + 150;
+                const readTime = Math.max(2, Math.round(wordCount / 150));
+                const formattedDate = new Date(post.created_at).toLocaleDateString("en-IN", {
+                  day: "2-digit", month: "short", year: "numeric",
+                });
+
+                return (
+                  <article
+                    key={post.id}
+                    className="group relative flex flex-col rounded-xl border border-border bg-bg-elev hover:border-primary/30 hover:shadow-[0_0_30px_-15px_rgba(190,242,100,0.15)] transition-all duration-300 overflow-hidden"
+                  >
+                    {/* Cover Image / Fallback */}
+                    <div className="relative aspect-video w-full overflow-hidden bg-bg-soft border-b border-border shrink-0">
+                      {post.cover_image_url ? (
+                        <img
+                          src={post.cover_image_url}
+                          alt={post.title}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      {/* Gradient fallback (always rendered, hidden when image loads) */}
+                      <div
+                        className="absolute inset-0 flex flex-col items-center justify-center"
+                        style={{ display: post.cover_image_url ? 'none' : 'flex',
+                          background: 'linear-gradient(135deg, #111114 0%, #16161A 50%, #0F0F12 100%)'
+                        }}
+                      >
+                        <div
+                          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2"
+                          style={{ background: 'linear-gradient(135deg, rgba(190,242,100,0.15), rgba(190,242,100,0.04))' }}
+                        >
+                          <span className="font-mono text-2xl font-black text-primary/40 select-none">
+                            {post.title.slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-1 font-mono text-[9px] text-text-faint">
+                          <ImageOff className="h-2.5 w-2.5" /> No cover image
+                        </span>
+                      </div>
+
+                      {/* Status badge */}
+                      <div className="absolute top-2.5 left-2.5">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider backdrop-blur-sm ${
+                            post.published
+                              ? "bg-green-400/15 text-green-400 border border-green-400/25"
+                              : "bg-bg-elev/90 text-text-muted border border-border"
+                          }`}
+                        >
+                          <span className={`h-1 w-1 rounded-full ${post.published ? 'bg-green-400' : 'bg-text-faint'}`} />
+                          {post.published ? "published" : "draft"}
+                        </span>
+                      </div>
+
+                      {/* Read time */}
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="inline-flex items-center gap-1 rounded-sm bg-bg-elev/90 border border-border/60 px-2 py-0.5 font-mono text-[8px] text-text-muted backdrop-blur-sm">
+                          <Clock className="h-2 w-2 text-primary" /> {readTime} min
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="flex flex-col flex-1 p-4">
+                      {/* Date */}
+                      <div className="flex items-center gap-1.5 font-mono text-[9px] text-text-faint mb-2">
+                        <Calendar className="h-2.5 w-2.5 text-primary/60" />
+                        {formattedDate}
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="font-bold text-sm text-foreground line-clamp-2 leading-snug mb-2 group-hover:text-primary transition-colors duration-200">
+                        {post.title}
+                      </h3>
+
+                      {/* Excerpt */}
+                      <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed flex-1">
+                        {post.excerpt.replace(/<[^>]*>/g, '')}
+                      </p>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
+                        <span className="font-mono text-[9px] text-text-faint truncate max-w-[110px]" title={`/blog/${post.slug}`}>
+                          /blog/{post.slug}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {post.published && (
+                            <Link
+                              to="/blog/$slug"
+                              params={{ slug: post.slug }}
+                              target="_blank"
+                              className="p-1.5 rounded bg-bg-soft text-text-muted hover:text-primary transition-colors border border-border"
+                              title="View live post"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => handleEdit(post)}
+                            className="p-1.5 rounded bg-bg-soft text-text-muted hover:text-primary transition-colors border border-border"
+                            title="Edit article"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(post)}
+                            className="p-1.5 rounded bg-red-400/5 text-red-400 hover:bg-red-400/10 transition-colors border border-red-400/15"
+                            title="Delete article"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>

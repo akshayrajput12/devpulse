@@ -23,24 +23,71 @@ export const FlowSection: React.FC<FlowSectionProps> = ({
   style = {},
   children,
   'aria-label': ariaLabel,
-}) => (
-  <section
-    data-flow-section
-    aria-label={ariaLabel}
-    className={cx('relative min-h-screen w-full overflow-hidden', className)}
-  >
-    <div
-      data-flow-inner
-      className={cx(
-        'flow-art-container relative flex min-h-screen w-full flex-col justify-between gap-6 px-[4vw] pt-[clamp(2rem,8vw,4vw)] pb-[4vw]',
-        'will-change-transform',
-      )}
-      style={{ transformOrigin: 'bottom left', ...style }}
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    // Initial check
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkDark();
+
+    // Observe updates
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMouseCoords({ x, y });
+  };
+
+  // Beautiful high-contrast spotlight gradient for both dark and light modes
+  const glowColor = isDark 
+    ? 'rgba(190, 242, 100, 0.08)' // DevPulse Lime-Green
+    : 'rgba(21, 128, 61, 0.06)';  // Deep Emerald Green for high readability on light pages
+
+  return (
+    <section
+      ref={containerRef}
+      data-flow-section
+      aria-label={ariaLabel}
+      className={cx('relative min-h-screen w-full overflow-hidden', className)}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {children}
-    </div>
-  </section>
-);
+      {/* Dynamic Cursor Spotlight Hover Glow */}
+      {isHovered && (
+        <div
+          className="absolute pointer-events-none inset-0 transition-opacity duration-300 opacity-100 z-0"
+          style={{
+            background: `radial-gradient(420px circle at ${mouseCoords.x}px ${mouseCoords.y}px, ${glowColor}, transparent 80%)`,
+          }}
+        />
+      )}
+
+      <div
+        data-flow-inner
+        className={cx(
+          'flow-art-container relative z-10 flex min-h-screen w-full flex-col justify-between gap-6 px-[4vw] pt-[clamp(2rem,8vw,4vw)] pb-[4vw]',
+          'will-change-transform',
+        )}
+        style={{ transformOrigin: 'bottom left', ...style }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+};
 
 export interface FlowArtProps {
   children: React.ReactNode;

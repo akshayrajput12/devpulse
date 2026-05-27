@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { motion, AnimatePresence, useMotionValueEvent } from "framer-motion";
+import { motion, AnimatePresence, useMotionValueEvent, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { 
   ArrowRight, Check, Github, Shield, Zap, Share2, Webhook, Users, GitPullRequest, 
@@ -20,6 +20,10 @@ import {
   useContainerScrollContext
 } from "@/components/ui/animated-video-on-scroll";
 import FlowArt, { FlowSection } from "@/components/ui/story-scroll";
+import { FeatureSectionCard } from "@/components/ui/feature-section-card";
+import { TimelineContent } from "@/components/ui/timeline-animation";
+import AboutSection1 from "@/components/ui/about-section-1";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -56,6 +60,196 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function SpotlightCard({ 
+  children, 
+  className = "", 
+  whileHover, 
+  ...props 
+}: { 
+  children: React.ReactNode; 
+  className?: string; 
+  whileHover?: any; 
+  [key: string]: any;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const checkDark = () => setIsDark(document.documentElement.classList.contains("dark"));
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setMouseCoords({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const glowColor = isDark 
+    ? "rgba(190, 242, 100, 0.12)" // Subtly bright lime green tint
+    : "rgba(77, 124, 15, 0.08)";   // Elegant deep forest tint
+
+  return (
+    <motion.div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      whileHover={whileHover}
+      className={cn("relative overflow-hidden rounded-xl border bg-bg-elev/80 transition-all", className)}
+      {...props}
+    >
+      {isHovered && (
+        <div
+          className="absolute pointer-events-none inset-0 transition-opacity duration-300 opacity-100 z-0"
+          style={{
+            background: `radial-gradient(180px circle at ${mouseCoords.x}px ${mouseCoords.y}px, ${glowColor}, transparent 80%)`,
+          }}
+        />
+      )}
+      <div className="relative z-10 h-full w-full">
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTMLVideoElement>; isFullSize: boolean }) {
+  const { scrollYProgress } = useContainerScrollContext();
+  // Perspective tilt: starts tilted back, flattens as user scrolls
+  const rotateX = useTransform(scrollYProgress, [0, 0.7], [22, 0]);
+  const scale   = useTransform(scrollYProgress, [0, 0.8], [0.78, 1]);
+  const glowOp  = useTransform(scrollYProgress, [0.5, 0.85], [0, 1]);
+
+  return (
+    <motion.div
+      className="w-full flex justify-center items-end mt-6"
+      style={{ perspective: "1200px" }}
+    >
+      <motion.div
+        className="relative w-full"
+        style={{
+          maxWidth: isFullSize ? "min(1100px, 92vw)" : "min(820px, 88vw)",
+          rotateX,
+          scale,
+          transformOrigin: "center bottom",
+          transition: "max-width 0.7s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      >
+        {/* ── Laptop Lid / Screen ─────────────────────────────────── */}
+        <div className="relative w-full" style={{ aspectRatio: "16/10" }}>
+          {/* Outer aluminum bezel */}
+          <div
+            className="absolute inset-0 rounded-[14px] overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, #3a3a3c 0%, #1c1c1e 40%, #0e0e10 100%)",
+              boxShadow: "0 0 0 1.5px #4a4a50, 0 30px 80px rgba(0,0,0,0.75), 0 8px 24px rgba(0,0,0,0.5)",
+              padding: "3.2% 2.8%",
+            }}
+          >
+            {/* Screen inner black frame */}
+            <div
+              className="relative w-full h-full rounded-[8px] overflow-hidden"
+              style={{
+                background: "#000",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+              }}
+            >
+              {/* Camera notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center" style={{ width: 56, height: 10 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a1a1c", boxShadow: "0 0 0 1px #2a2a2e, inset 0 0 2px rgba(255,255,255,0.08)" }} />
+              </div>
+              {/* Animated glow overlay when fully expanded */}
+              <motion.div
+                className="absolute inset-0 z-10 pointer-events-none rounded-[8px]"
+                style={{
+                  opacity: glowOp,
+                  boxShadow: "inset 0 0 60px rgba(190,242,100,0.12), 0 0 100px rgba(190,242,100,0.22)",
+                }}
+              />
+              {/* The actual video */}
+              <video
+                ref={videoRef}
+                src="/intro.mp4"
+                className="w-full h-full object-cover"
+                muted
+                playsInline
+                loop
+                autoPlay
+              />
+            </div>
+          </div>
+
+          {/* Top lid shine strip */}
+          <div
+            className="absolute top-0 left-[8%] right-[8%] h-[3px] pointer-events-none"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.08) 70%, transparent)",
+              borderRadius: "0 0 4px 4px",
+            }}
+          />
+
+          {/* Animated lime glow ring when full */}
+          <motion.div
+            className="absolute inset-0 rounded-[14px] pointer-events-none"
+            style={{
+              opacity: glowOp,
+              boxShadow: "0 0 0 1.5px rgba(190,242,100,0.6), 0 0 60px rgba(190,242,100,0.2)",
+            }}
+          />
+        </div>
+
+        {/* ── Hinge shadow line ──────────────────────────────────── */}
+        <div
+          className="w-full h-[3px]"
+          style={{
+            background: "linear-gradient(90deg, #0a0a0c, #222226 20%, #2e2e32 50%, #222226 80%, #0a0a0c)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.04)",
+          }}
+        />
+
+        {/* ── Keyboard base / bottom chassis ────────────────────── */}
+        <div
+          className="relative w-full"
+          style={{
+            height: "clamp(14px, 4.5%, 32px)",
+            background: "linear-gradient(180deg, #252528 0%, #1a1a1d 55%, #101012 100%)",
+            borderRadius: "0 0 12px 12px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.7), 0 2px 0 rgba(255,255,255,0.04) inset",
+          }}
+        >
+          {/* Touchpad hint */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              width: "clamp(48px, 12%, 80px)",
+              height: "clamp(4px, 1.4%, 8px)",
+              borderRadius: 4,
+              background: "rgba(255,255,255,0.04)",
+              boxShadow: "0 0 0 1px rgba(255,255,255,0.06)",
+            }}
+          />
+        </div>
+
+        {/* ── Surface reflection / table shadow ─────────────────── */}
+        <div
+          className="w-full"
+          style={{
+            height: "clamp(8px, 2%, 14px)",
+            background: "radial-gradient(ellipse 80% 100% at 50% 0%, rgba(0,0,0,0.55), transparent)",
+            filter: "blur(3px)",
+          }}
+        />
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function HeroStickyContent() {
   const [url, setUrl] = useState("");
   const navigate = useNavigate();
@@ -63,7 +257,7 @@ function HeroStickyContent() {
   const [isFullSize, setIsFullSize] = useState(false);
   const { scrollYProgress } = useContainerScrollContext();
 
-  // Programmatically trigger video playback and dynamic highlight border when scroll reaches >= 75% full scale
+  // Programmatically trigger video playback when scroll reaches >= 75% full scale
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     const full = latest >= 0.75;
     setIsFullSize(full);
@@ -81,7 +275,7 @@ function HeroStickyContent() {
       <div className="absolute inset-0 dp-grid-bg opacity-30 pointer-events-none" />
       <div className="absolute left-1/2 top-1/2 -z-10 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, rgba(190,242,100,0.08), transparent 70%)" }} />
 
-      {/* Top Spacer to push content towards center */}
+      {/* Top Spacer */}
       <div className="h-2" />
 
       {/* Main Animated Headers, Form, and Meta */}
@@ -122,20 +316,10 @@ function HeroStickyContent() {
         </div>
       </ContainerAnimated>
 
-      {/* Dynamic Scaling Video Container with Glow Border Highlight */}
-      <ContainerInset className={`w-full transition-all duration-700 ease-in-out overflow-hidden mt-6 ${
-        isFullSize 
-          ? "max-w-[420px] h-[420px] rounded-2xl shadow-[0_0_60px_rgba(190,242,100,0.3)]" 
-          : "max-w-5xl h-[420px] rounded-xl shadow-xl"
-      }`}>
-        <HeroVideo
-          ref={videoRef}
-          src="/intro.mp4"
-          className="w-full h-full object-cover"
-        />
-      </ContainerInset>
+      {/* 3D MacBook Mockup with Video */}
+      <MacbookMockup videoRef={videoRef} isFullSize={isFullSize} />
 
-      {/* Dynamic Animated Scroll Mouse Indicator */}
+      {/* Scroll Mouse Indicator */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: isFullSize ? 0 : 0.8, y: 0 }}
@@ -239,6 +423,7 @@ const STREAM_STEPS = [
 function LiveDemo() {
   const [tick, setTick] = useState(0);
   const [run, setRun] = useState(0);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTick(0);
@@ -249,79 +434,201 @@ function LiveDemo() {
   const visible = STREAM_STEPS.slice(0, tick);
   const score = Math.max(0, Math.min(73, tick * 12));
 
+  const revealVariants = {
+    visible: (i: number) => ({
+      y: 0,
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        delay: i * 0.35,
+        duration: 0.55,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    }),
+    hidden: {
+      filter: "blur(8px)",
+      y: 30,
+      opacity: 0,
+    },
+  };
+
+  const textVariants = {
+    visible: (i: number) => ({
+      filter: "blur(0px)",
+      opacity: 1,
+      transition: {
+        delay: i * 0.25,
+        duration: 0.55,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    }),
+    hidden: {
+      filter: "blur(8px)",
+      opacity: 0,
+    },
+  };
+
   return (
-    <section className="border-b border-border py-24" id="demo">
-      <Container>
-        <Eyebrow>The wow moment</Eyebrow>
-        <h2 className="tracking-tightest mt-3 max-w-[18ch] font-medium" style={{ fontSize: "clamp(28px, 3.6vw, 44px)", lineHeight: 1.08, letterSpacing: "-0.028em" }}>
-          Watch a real review stream in.
-        </h2>
-        <p className="mt-3 max-w-[56ch] text-text-muted">No mockups, no canned video. Real streaming output, the same component you'll use in production.</p>
+    <section className="border-b border-border py-24 bg-bg relative overflow-hidden" id="demo" ref={heroRef}>
+      <div className="absolute inset-0 dp-grid-bg opacity-10 pointer-events-none" />
+      <Container className="relative z-10">
+        <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-16">
+          
+          {/* Left side - Dynamic Content Timeline & Statistics */}
+          <div className="flex-1 space-y-8 w-full">
+            <div>
+              <TimelineContent
+                as="div"
+                animationNum={0}
+                timelineRef={heroRef}
+                customVariants={revealVariants}
+              >
+                <Eyebrow>The wow moment</Eyebrow>
+              </TimelineContent>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="overflow-hidden rounded-xl border border-border bg-bg-code">
-            <div className="flex items-center justify-between border-b border-border-faint px-4 py-2.5 font-mono text-xs">
-              <div className="flex items-center gap-2 text-text-muted">
-                <span className="h-2.5 w-2.5 rounded-full bg-sev-crit/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-sev-med/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-sev-ok/70" />
-                <span className="ml-2">devpulse — review</span>
-              </div>
-              <button onClick={() => setRun(r => r + 1)} className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-text-muted hover:text-foreground">
-                <RotateCw className="h-3 w-3" /> Replay
-              </button>
-            </div>
-            <div className="min-h-[320px] space-y-2 p-5 font-mono text-[13px]">
-              <AnimatePresence>
-                {visible.map((s, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-                    <span className="text-text-faint">{String(i + 1).padStart(2, "0")}</span>
-                    {s.kind === "log" && <span className="text-text-muted">› {s.text}</span>}
-                    {s.kind === "issue" && (
-                      <>
-                        <SeverityBadge level={(s as any).sev} />
-                        <span>{s.text}</span>
-                        <span className="text-text-faint">{(s as any).file}</span>
-                      </>
-                    )}
-                    {s.kind === "done" && (
-                      <span className="inline-flex items-center gap-2 rounded-sm bg-accent px-2 py-0.5 text-accent-foreground">
-                        <Check className="h-3 w-3" /> {s.text}
-                      </span>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {tick < STREAM_STEPS.length && <span className="dp-blink inline-block">▍</span>}
-            </div>
-          </div>
+              <TimelineContent
+                as="h2"
+                animationNum={1}
+                timelineRef={heroRef}
+                customVariants={revealVariants}
+                className="tracking-tightest mt-3 font-medium text-foreground !leading-[1.08] font-sans text-3xl md:text-4xl lg:text-5xl"
+              >
+                Watch a real review{" "}
+                <TimelineContent
+                  as="span"
+                  animationNum={2}
+                  timelineRef={heroRef}
+                  customVariants={textVariants}
+                  className="text-primary border-2 border-primary/50 border-dotted inline-block px-3 py-0.5 rounded-md"
+                >
+                  stream in.
+                </TimelineContent>
+              </TimelineContent>
 
-          <div className="flex flex-col gap-4">
-            <div className="rounded-xl border border-border bg-bg-elev p-5">
-              <div className="font-mono text-[11px] uppercase tracking-widest text-text-faint">Health score</div>
-              <div className="mt-3 flex items-center gap-4">
-                <HealthScore value={score} size={96} />
-                <div className="text-sm text-text-muted">
-                  <div>Streams as issues land.</div>
-                  <div className="mt-1 font-mono text-xs">/ {tick} of {STREAM_STEPS.length}</div>
+              <TimelineContent
+                as="p"
+                animationNum={3}
+                timelineRef={heroRef}
+                customVariants={textVariants}
+                className="mt-6 text-text-muted text-sm md:text-base leading-relaxed max-w-[46ch] font-sans"
+              >
+                No mockups, no canned video. Real streaming output, the same component you'll use in production.
+              </TimelineContent>
+            </div>
+
+            {/* Metrics cards grid */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <TimelineContent
+                as="div"
+                animationNum={4}
+                timelineRef={heroRef}
+                customVariants={textVariants}
+                className="rounded-xl border border-border bg-bg-elev/60 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] backdrop-blur-sm"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-widest text-text-faint">Health score</div>
+                <div className="mt-3 flex items-center gap-4">
+                  <HealthScore value={score} size={84} />
+                  <div className="text-xs text-text-muted">
+                    <div className="font-semibold text-foreground">Streams live.</div>
+                    <div className="mt-1 font-mono text-[11px]">/ {tick} of {STREAM_STEPS.length}</div>
+                  </div>
                 </div>
-              </div>
+              </TimelineContent>
+
+              <TimelineContent
+                as="div"
+                animationNum={5}
+                timelineRef={heroRef}
+                customVariants={textVariants}
+                className="rounded-xl border border-border bg-bg-elev/60 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] backdrop-blur-sm"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-widest text-text-faint">By severity</div>
+                <div className="mt-2.5 space-y-1.5">
+                  {(["crit", "high", "med", "low"] as const).map((lv) => {
+                    const n = visible.filter((s) => s.kind === "issue" && (s as any).sev === lv).length;
+                    return (
+                      <div key={lv} className="flex items-center justify-between text-xs">
+                        <span className="inline-flex items-center gap-1.5">
+                          <SeverityDot level={lv} /> 
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">{lv}</span>
+                        </span>
+                        <span className="font-mono tabular-nums font-semibold text-foreground">{n}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </TimelineContent>
             </div>
-            <div className="rounded-xl border border-border bg-bg-elev p-5">
-              <div className="font-mono text-[11px] uppercase tracking-widest text-text-faint">By severity</div>
-              <div className="mt-3 space-y-2">
-                {(["crit", "high", "med", "low"] as const).map((lv) => {
-                  const n = visible.filter((s) => s.kind === "issue" && (s as any).sev === lv).length;
-                  return (
-                    <div key={lv} className="flex items-center justify-between text-sm">
-                      <span className="inline-flex items-center gap-2"><SeverityDot level={lv} /> <span className="font-mono text-xs uppercase tracking-wider">{lv}</span></span>
-                      <span className="font-mono tabular-nums">{n}</span>
-                    </div>
-                  );
-                })}
+
+            {/* Sub-bar / CTA Replay trigger */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border/30">
+              <TimelineContent
+                as="div"
+                animationNum={6}
+                timelineRef={heroRef}
+                customVariants={textVariants}
+                className="text-xs font-mono text-text-muted"
+              >
+                <div className="font-semibold text-foreground mb-0.5 capitalize">
+                  Continuous active reviews
+                </div>
+                <div className="text-text-faint uppercase text-[9px] tracking-wider font-semibold">
+                  10-second diagnostic loop
+                </div>
+              </TimelineContent>
+
+              <TimelineContent
+                as="button"
+                animationNum={7}
+                timelineRef={heroRef}
+                customVariants={textVariants}
+                onClick={() => setRun(r => r + 1)}
+                className="bg-primary hover:shadow-primary/30 text-primary-foreground gap-2 font-medium shadow-lg shadow-primary/25 h-11 px-5 rounded-full text-xs inline-flex items-center cursor-pointer transition hover:-translate-y-0.5 active:translate-y-0 select-none"
+              >
+                <RotateCw size={13} className={cn("transition-transform", tick < STREAM_STEPS.length && "animate-spin-slow")} />
+                Replay Stream
+              </TimelineContent>
+            </div>
+          </div>
+
+          {/* Right side - Live Terminal Stream */}
+          <div className="flex-1 w-full lg:max-w-[540px]">
+            <div className="overflow-hidden rounded-xl border border-border bg-bg-code shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-md">
+              <div className="flex items-center justify-between border-b border-border-faint px-4 py-2.5 font-mono text-xs">
+                <div className="flex items-center gap-2 text-text-muted">
+                  <span className="h-2.5 w-2.5 rounded-full bg-sev-crit/70" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-sev-med/70" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-sev-ok/70" />
+                  <span className="ml-2">devpulse — review</span>
+                </div>
+                <span className="text-[10px] text-text-faint font-mono uppercase tracking-wider">active stream</span>
+              </div>
+              <div className="min-h-[340px] space-y-2 p-5 font-mono text-[12.5px] leading-relaxed">
+                <AnimatePresence>
+                  {visible.map((s, i) => (
+                    <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+                      <span className="text-text-faint">{String(i + 1).padStart(2, "0")}</span>
+                      {s.kind === "log" && <span className="text-text-muted">› {s.text}</span>}
+                      {s.kind === "issue" && (
+                        <>
+                          <SeverityBadge level={(s as any).sev} />
+                          <span className="text-foreground font-semibold">{s.text}</span>
+                          <span className="text-text-faint">{(s as any).file}</span>
+                        </>
+                      )}
+                      {s.kind === "done" && (
+                        <span className="inline-flex items-center gap-2 rounded-sm bg-accent px-2 py-0.5 text-accent-foreground">
+                          <Check className="h-3 w-3" /> {s.text}
+                        </span>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {tick < STREAM_STEPS.length && <span className="dp-blink inline-block text-primary">▍</span>}
               </div>
             </div>
           </div>
+
         </div>
       </Container>
     </section>
@@ -339,335 +646,166 @@ const FEATURES = [
 
 function Features() {
   return (
-    <div id="features" className="w-full bg-[#09090b]">
+    <div id="features" className="w-full bg-bg">
       <FlowArt aria-label="DevPulse Core Capabilities Showcase">
         
         {/* Section 1: Security Audit */}
-        <FlowSection 
-          aria-label="Secure In-Memory Diagnostics" 
-          style={{ backgroundColor: '#09090b', color: '#ffffff' }}
-          className="border-t border-border/40"
-        >
-          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
-          <div className="relative z-10 w-full h-full flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-primary">01 / SECURITY AUDITING</span>
-              <span className="font-mono text-xs text-text-faint">DEVPULSE CORE</span>
-            </div>
-            
-            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
-              <div className="space-y-6">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded inline-block">
-                  / secure memory scanning
+        <FeatureSectionCard
+          ariaLabel="Secure In-Memory Diagnostics"
+          label="Secure In-Memory Audits"
+          badge="DEVPULSE CORE"
+          title={<>IN-MEMORY<br/>PR DIFF SCANS</>}
+          description="Security starts at diff parsing. DevPulse executes scans strictly in-memory. Your proprietary code is never written to disk, saved in backend databases, or ingested to train public AI models."
+          checks={["OWASP Top 10 Audits", "Zero Data Persistence"]}
+          checkColor="text-primary"
+          footerText="DevPulse Continuous Diagnostics Engine"
+          mockup={
+            <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md w-full max-w-[480px]">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span>Vulnerability Diagnostic</span>
                 </div>
-                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
-                  IN-MEMORY<br/>PR DIFF SCANS
-                </h2>
-                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
-                  Security starts at diff parsing. DevPulse executes scans strictly in-memory. Your proprietary code is never written to disk, saved in backend databases, or ingested to train public AI models.
-                </p>
-                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> OWASP Top 10 Audits</span>
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Zero Data Persistence</span>
-                </div>
+                <span>98% Conf.</span>
               </div>
-
-              {/* Security Mockup Card */}
-              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
-                <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    <span>Vulnerability Diagnostic</span>
-                  </div>
-                  <span>98% Conf.</span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">CRITICAL</span>
+                  <h4 className="text-sm font-semibold text-foreground">SQL Injection in User Lookup</h4>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">CRITICAL</span>
-                    <h4 className="text-sm font-semibold text-foreground">SQL Injection in User Lookup</h4>
-                  </div>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    Unparameterized variable concatenation detected in Raw PostgreSQL query loop.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="font-mono text-[8px] uppercase tracking-wider text-red-400">⛔ Offending Code</div>
-                    <pre className="font-mono text-[10px] bg-red-950/20 border border-red-900/30 text-red-300 p-3 rounded-lg overflow-x-auto">
-                      {`const user = await db.query(
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Unparameterized variable concatenation detected in Raw PostgreSQL query loop.
+                </p>
+                <div className="space-y-2">
+                  <div className="font-mono text-[8px] uppercase tracking-wider text-red-600 dark:text-red-400">⛔ Offending Code</div>
+                  <pre className="font-mono text-[10px] bg-red-500/5 dark:bg-red-950/20 border border-red-500/25 dark:border-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg overflow-x-auto">
+                    {`const user = await db.query(
   \`SELECT * FROM users WHERE id = '\${req.query.id}'\`
 );`}
-                    </pre>
-                  </div>
+                  </pre>
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
-              <span>DevPulse Continuous Diagnostics Engine</span>
-              <span>v1.0.2</span>
-            </div>
-          </div>
-        </FlowSection>
+          }
+        />
 
         {/* Section 2: Database Bottlenecks */}
-        <FlowSection 
-          aria-label="Pre-emptive Database Auditing" 
-          style={{ backgroundColor: '#0c0a09', color: '#ffffff' }}
-          className="border-t border-border/40"
-        >
-          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
-          <div className="relative z-10 w-full h-full flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#f59e0b]">02 / DATABASE AUDITING</span>
-              <span className="font-mono text-xs text-text-faint">INDEX & QUERY OPTIMIZER</span>
-            </div>
-            
-            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
-              <div className="space-y-6">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[#f59e0b] border border-[#f59e0b]/20 bg-[#f59e0b]/5 px-2.5 py-0.5 rounded inline-block">
-                  / migration query analyzer
+        <FeatureSectionCard
+          ariaLabel="Pre-emptive Database Auditing"
+          label="Database Optimization Auditing"
+          badge="INDEX & QUERY OPTIMIZER"
+          title={<>PRE-EMPTIVE<br/>BOTTLENECK DETECTOR</>}
+          description="Database locks and slow operations are caught before staging. DevPulse evaluates all ORM calls, schema modifications, and migration patterns to catch N+1 query loops, missing index paths, and risky database blocks."
+          checks={["N+1 Loop Prevention", "Index Gaps Isolation"]}
+          checkColor="text-[#f59e0b]"
+          footerText="DevPulse Query Performance Engine"
+          mockup={
+            <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md w-full max-w-[480px]">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span>Query Performance Audit</span>
                 </div>
-                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
-                  PRE-EMPTIVE<br/>BOTTLENECK DETECTOR
-                </h2>
-                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
-                  Database locks and slow operations are caught before staging. DevPulse evaluates all ORM calls, schema modifications, and migration patterns to catch N+1 query loops, missing index paths, and risky database blocks.
-                </p>
-                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#f59e0b]" /> N+1 Loop Prevention</span>
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#f59e0b]" /> Index Gaps Isolation</span>
-                </div>
+                <span>92% Conf.</span>
               </div>
-
-              {/* Database Mockup Card */}
-              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
-                <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span>Query Performance Audit</span>
-                  </div>
-                  <span>92% Conf.</span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">HIGH SEVERITY</span>
+                  <h4 className="text-sm font-semibold text-foreground">N+1 Relational Query Loop</h4>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">HIGH SEVERITY</span>
-                    <h4 className="text-sm font-semibold text-foreground">N+1 Relational Query Loop</h4>
-                  </div>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    Executing dynamic subqueries inside user post loop. Triggers 100+ database hits.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="font-mono text-[8px] uppercase tracking-wider text-[#bef264]">✅ Recommended Complete Fix</div>
-                    <pre className="font-mono text-[10px] bg-emerald-950/20 border border-emerald-900/30 text-emerald-300 p-3 rounded-lg overflow-x-auto">
-                      {`// Batch load comments using SQL JOIN
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Executing dynamic subqueries inside user post loop. Triggers 100+ database hits.
+                </p>
+                <div className="space-y-2">
+                  <div className="font-mono text-[8px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">✅ Recommended Complete Fix</div>
+                  <pre className="font-mono text-[10px] bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/25 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-300 p-3 rounded-lg overflow-x-auto">
+                    {`// Batch load comments using SQL JOIN
 const postsWithComments = await db.posts.findMany({
   include: { comments: true }
 });`}
-                    </pre>
-                  </div>
+                  </pre>
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
-              <span>DevPulse Query Performance Engine</span>
-              <span>v1.0.2</span>
-            </div>
-          </div>
-        </FlowSection>
+          }
+        />
 
         {/* Section 3: Continuous Deployment comments */}
-        <FlowSection 
-          aria-label="Continuous Git Integration" 
-          style={{ backgroundColor: '#18181b', color: '#ffffff' }}
-          className="border-t border-border/40"
-        >
-          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
-          <div className="relative z-10 w-full h-full flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#8b5cf6]">03 / GIT INTEGRATION</span>
-              <span className="font-mono text-xs text-text-faint">AUTOMATED WORKFLOW</span>
-            </div>
-            
-            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
-              <div className="space-y-6">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-[#8b5cf6] border border-[#8b5cf6]/20 bg-[#8b5cf6]/5 px-2.5 py-0.5 rounded inline-block">
-                  / github pr action comment
+        <FeatureSectionCard
+          ariaLabel="Continuous Git Integration"
+          label="Git PR Workflow Integration"
+          badge="AUTOMATED WORKFLOW"
+          title={<>CONTINUOUS<br/>PR FEEDBACK LOOP</>}
+          description="Keep your engineers aligned without leaving their screens. DevPulse writes precise review comments directly onto your GitHub Pull Request timeline or delivers comprehensive SMTP report dashboards to your inbox."
+          checks={["Github App Webhook", "Line-by-line Comments"]}
+          checkColor="text-[#8b5cf6]"
+          footerText="DevPulse Pull Request Workflow Integration"
+          mockup={
+            <div className="rounded-xl border border-border bg-bg-elev/80 p-5 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md w-full max-w-[480px]">
+              <div className="flex items-center gap-2.5 border-b border-border pb-3 mb-3">
+                <div className="bg-bg-soft w-8 h-8 rounded-md flex items-center justify-center border border-border">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
                 </div>
-                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
-                  CONTINUOUS<br/>PR FEEDBACK LOOP
-                </h2>
-                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
-                  Keep your engineers aligned without leaving their screens. DevPulse writes precise review comments directly onto your GitHub Pull Request timeline or delivers comprehensive SMTP report dashboards to your inbox.
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-foreground">DevPulse AI Bot</span>
+                    <span className="rounded bg-primary/10 border border-primary/20 text-primary font-mono text-[8px] font-bold px-1.5 py-0.1 uppercase tracking-wider">App</span>
+                  </div>
+                  <span className="text-[10px] text-text-faint font-mono">reviewed this pull request 4s ago</span>
+                </div>
+              </div>
+              <div className="space-y-3 font-sans text-xs text-text-muted">
+                <p>
+                  ⚡ Diagnostics complete for <code className="font-mono bg-bg-soft px-1 rounded text-foreground">api/search.ts</code>. Audit results:
                 </p>
-                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8b5cf6]" /> Github App Webhook</span>
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8b5cf6]" /> Line-by-line Comments</span>
-                </div>
-              </div>
-
-              {/* GitHub Pull Request Comment Mockup Card */}
-              <div className="rounded-xl border border-border bg-bg-elev/80 p-5 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
-                <div className="flex items-center gap-2.5 border-b border-border pb-3 mb-3">
-                  <div className="bg-slate-900 w-8 h-8 rounded-md flex items-center justify-center border border-border">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bef264" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-foreground">DevPulse AI Bot</span>
-                      <span className="rounded bg-primary/10 border border-primary/20 text-primary font-mono text-[8px] font-bold px-1.5 py-0.1 uppercase tracking-wider">App</span>
-                    </div>
-                    <span className="text-[10px] text-text-faint font-mono">reviewed this pull request 4s ago</span>
-                  </div>
-                </div>
-                <div className="space-y-3 font-sans text-xs text-text-muted">
-                  <p>
-                    ⚡ Diagnostics complete for <code className="font-mono bg-bg-soft px-1 rounded text-foreground">api/search.ts</code>. Audit results:
-                  </p>
-                  <ul className="list-disc pl-4 space-y-1.5">
-                    <li><span className="text-red-400 font-semibold">1 Critical issue:</span> SQL Injection risk resolved.</li>
-                    <li><span className="text-amber-400 font-semibold">1 High issue:</span> N+1 performance query query batched.</li>
-                  </ul>
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 font-mono text-[10px] text-primary flex items-center justify-between mt-2">
-                    <span>Health Score: 94 / 100</span>
-                    <span className="font-semibold flex items-center gap-1">Open Interactive Dashboard &rarr;</span>
-                  </div>
+                <ul className="list-disc pl-4 space-y-1.5">
+                  <li><span className="text-red-400 font-semibold">1 Critical issue:</span> SQL Injection risk resolved.</li>
+                  <li><span className="text-amber-400 font-semibold">1 High issue:</span> N+1 performance query query batched.</li>
+                </ul>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 font-mono text-[10px] text-primary flex items-center justify-between mt-2">
+                  <span>Health Score: 94 / 100</span>
+                  <span className="font-semibold flex items-center gap-1">Open Interactive Dashboard &rarr;</span>
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
-              <span>DevPulse Pull Request Workflow Integration</span>
-              <span>v1.0.2</span>
-            </div>
-          </div>
-        </FlowSection>
+          }
+        />
 
         {/* Section 4: Enterprise metrics & diagnostics velocity */}
-        <FlowSection 
-          aria-label="Enterprise Grade Performance" 
-          style={{ backgroundColor: '#020617', color: '#ffffff' }}
-          className="border-t border-border/40"
-        >
-          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
-          <div className="relative z-10 w-full h-full flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-primary">04 / DIAGNOSTIC PERFORMANCE</span>
-              <span className="font-mono text-xs text-text-faint">ENTERPRISE SCALE</span>
-            </div>
-            
-            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
-              <div className="space-y-6">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded inline-block">
-                  / lightning fast code audits
+        <FeatureSectionCard
+          ariaLabel="Enterprise Grade Performance"
+          label="Scalable Enterprise Performance"
+          badge="ENTERPRISE SCALE"
+          title={<>DIAGNOSTIC SPEED<br/>UNTETHERED VELOCITY</>}
+          description="Engineered to scale for multi-developer teams. Enjoy lightning fast 6.4s diagnostic runs, track comprehensive credits transaction histories, set custom concurrency limits, and export premium reports."
+          checks={["Avg. Run: 6.4s", "Enterprise Scaled"]}
+          checkColor="text-primary"
+          footerText="DevPulse Scale Diagnostic Dashboard"
+          mockup={
+            <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md w-full max-w-[480px]">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
+                  <div className="font-sans text-3xl font-extrabold text-primary">94</div>
+                  <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Avg Health Score</div>
                 </div>
-                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
-                  DIAGNOSTIC SPEED<br/>UNTETHERED VELOCITY
-                </h2>
-                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
-                  Engineered to scale for multi-developer teams. Enjoy lightning fast 6.4s diagnostic runs, track comprehensive credits transaction histories, set custom concurrency limits, and export premium reports.
-                </p>
-                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Avg. Run: 6.4s</span>
-                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Enterprise Scaled</span>
+                <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
+                  <div className="font-sans text-3xl font-extrabold text-foreground">6.4s</div>
+                  <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Review Speed</div>
                 </div>
-              </div>
-
-              {/* Stats Mockup Card */}
-              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
-                    <div className="font-sans text-3xl font-extrabold text-primary">94</div>
-                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Avg Health Score</div>
-                  </div>
-                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
-                    <div className="font-sans text-3xl font-extrabold text-foreground">6.4s</div>
-                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Review Speed</div>
-                  </div>
-                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center col-span-2">
-                    <div className="font-sans text-2xl font-bold text-foreground">148 Files</div>
-                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Audited This Month</div>
-                  </div>
+                <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center col-span-2">
+                  <div className="font-sans text-2xl font-bold text-foreground">148 Files</div>
+                  <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Audited This Month</div>
                 </div>
               </div>
             </div>
-
-            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
-              <span>DevPulse Scale Diagnostic Dashboard</span>
-              <span>v1.0.2</span>
-            </div>
-          </div>
-        </FlowSection>
+          }
+        />
 
       </FlowArt>
     </div>
   );
 }
 
-function UspPillarsSection() {
-  return (
-    <section className="border-b border-border py-24 relative overflow-hidden bg-bg-soft/20">
-      <div className="absolute inset-0 dp-grid-bg opacity-30 pointer-events-none" />
-      <Container className="relative">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <Eyebrow>ENGINEERING GUARDRAILS</Eyebrow>
-          <h2 className="tracking-tightest mt-3 font-medium text-foreground text-3xl md:text-4xl" style={{ lineHeight: 1.08, letterSpacing: "-0.028em" }}>
-            Deeper than standard code liners.
-          </h2>
-          <p className="mt-4 text-text-muted text-sm leading-relaxed">
-            Standard AI reviews stop at code syntax. DevPulse integrates deep stack-awareness, database schema optimizations, and structural safeguards.
-          </p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3 max-w-[1080px] mx-auto">
-          <motion.div 
-            whileHover={{ y: -4, borderColor: "rgba(190,242,100,0.4)" }}
-            className="flex flex-col gap-4 p-6 rounded-xl border border-border bg-bg-elev/80 transition"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
-              <Activity className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-base text-foreground">Stack-Aware Architecture Audit</h4>
-              <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                Uses your `.devpulse.json` config to analyze architectural alignment, pattern standards, and dependency rules across directories.
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            whileHover={{ y: -4, borderColor: "rgba(59,130,246,0.4)" }}
-            className="flex flex-col gap-4 p-6 rounded-xl border border-border bg-bg-elev/80 transition"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-base text-foreground">Production Shield Safeguards</h4>
-              <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                Detects what files or critical configurations are *absent* (e.g. tests, environment schema validation, DB migration locks).
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            whileHover={{ y: -4, borderColor: "rgba(249,115,22,0.4)" }}
-            className="flex flex-col gap-4 p-6 rounded-xl border border-border bg-bg-elev/80 transition"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">
-              <Lock className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-base text-foreground">SQL & API Analyser Engine</h4>
-              <p className="mt-2 text-xs text-text-muted leading-relaxed">
-                Triggers parallel Gemini AI chunks to audit SQL bottlenecks, transaction locks, and query scalability in DB layers.
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </Container>
-    </section>
-  );
-}
 
 function MailingShowcaseSection() {
   return (
@@ -677,7 +815,7 @@ function MailingShowcaseSection() {
         <div className="grid gap-16 lg:grid-cols-[1.1fr_1fr] items-center">
           {/* Premium Mailing Showcase */}
           <div className="flex flex-col justify-center items-center lg:items-start order-2 lg:order-1">
-            <div className="w-full max-w-[480px] rounded-2xl border border-border bg-bg-elev p-6 shadow-2xl relative overflow-hidden group">
+            <SpotlightCard className="w-full max-w-[480px] p-6 shadow-2xl group">
               {/* Glowing Pulse Border */}
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/5 opacity-50 pointer-events-none" />
               
@@ -745,7 +883,7 @@ function MailingShowcaseSection() {
                   Open Report <ArrowRight className="h-3 w-3" />
                 </span>
               </div>
-            </div>
+            </SpotlightCard>
           </div>
 
           {/* Explanatory text */}
@@ -943,9 +1081,10 @@ function Pricing() {
           {displayPlans.map((p) => {
             const isFree = p.id === "free";
             return (
-              <div 
+              <SpotlightCard 
                 key={p.id} 
-                className={`relative rounded-xl border bg-bg-elev p-6 flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] ${
+                whileHover={{ scale: 1.01 }}
+                className={`p-6 flex flex-col justify-between ${
                   p.recommended 
                     ? "border-primary shadow-[0_0_50px_-20px_rgba(190,242,100,0.3)]" 
                     : "border-border"
@@ -993,7 +1132,7 @@ function Pricing() {
                 >
                   {isFree ? "Start free" : "Upgrade to Pro"}
                 </Link>
-              </div>
+              </SpotlightCard>
             );
           })}
         </div>
@@ -1239,11 +1378,11 @@ function Landing() {
       <AppNav />
       <Hero />
       <LogoTicker />
-      <UspPillarsSection />
-      <ComparisonSection />
-      <MailingShowcaseSection />
-      <LiveDemo />
       <Features />
+      <LiveDemo />
+      <MailingShowcaseSection />
+      <AboutSection1 />
+      <ComparisonSection />
       <Pricing />
       <BlogCarouselSection />
       <CTA />
