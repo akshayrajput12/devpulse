@@ -19,6 +19,7 @@ import {
   HeroVideo,
   useContainerScrollContext
 } from "@/components/ui/animated-video-on-scroll";
+import FlowArt, { FlowSection } from "@/components/ui/story-scroll";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -338,31 +339,267 @@ const FEATURES = [
 
 function Features() {
   return (
-    <section id="features" className="border-b border-border py-24">
-      <Container>
-        <Eyebrow>Under the hood</Eyebrow>
-        <h2 className="tracking-tightest mt-3 max-w-[20ch] font-medium" style={{ fontSize: "clamp(28px, 3.6vw, 44px)", lineHeight: 1.08, letterSpacing: "-0.028em" }}>
-          Everything your senior dev checks, automated.
-        </h2>
-
-        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.t} className="group bg-bg-elev p-6 transition hover:bg-bg-soft">
-              <f.icon className="h-5 w-5 text-primary" />
-              <div className="mt-4 font-medium tracking-tight">{f.t}</div>
-              <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{f.d}</p>
+    <div id="features" className="w-full bg-[#09090b]">
+      <FlowArt aria-label="DevPulse Core Capabilities Showcase">
+        
+        {/* Section 1: Security Audit */}
+        <FlowSection 
+          aria-label="Secure In-Memory Diagnostics" 
+          style={{ backgroundColor: '#09090b', color: '#ffffff' }}
+          className="border-t border-border/40"
+        >
+          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-primary">01 / SECURITY AUDITING</span>
+              <span className="font-mono text-xs text-text-faint">DEVPULSE CORE</span>
             </div>
-          ))}
-        </div>
+            
+            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
+              <div className="space-y-6">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded inline-block">
+                  / secure memory scanning
+                </div>
+                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
+                  IN-MEMORY<br/>PR DIFF SCANS
+                </h2>
+                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
+                  Security starts at diff parsing. DevPulse executes scans strictly in-memory. Your proprietary code is never written to disk, saved in backend databases, or ingested to train public AI models.
+                </p>
+                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> OWASP Top 10 Audits</span>
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Zero Data Persistence</span>
+                </div>
+              </div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg-soft px-5 py-4 font-mono text-xs text-text-muted">
-          <span className="text-text-faint">stack</span>
-          {["GitHub API", "DevPulse AI", "Supabase Postgres + RLS", "Realtime", "Edge functions", "Framer Motion"].map((s) => (
-            <span key={s} className="rounded border border-border-faint bg-bg-elev px-2 py-1">{s}</span>
-          ))}
-        </div>
-      </Container>
-    </section>
+              {/* Security Mockup Card */}
+              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
+                <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    <span>Vulnerability Diagnostic</span>
+                  </div>
+                  <span>98% Conf.</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-red-500/10 border border-red-500/20 text-red-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">CRITICAL</span>
+                    <h4 className="text-sm font-semibold text-foreground">SQL Injection in User Lookup</h4>
+                  </div>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    Unparameterized variable concatenation detected in Raw PostgreSQL query loop.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="font-mono text-[8px] uppercase tracking-wider text-red-400">⛔ Offending Code</div>
+                    <pre className="font-mono text-[10px] bg-red-950/20 border border-red-900/30 text-red-300 p-3 rounded-lg overflow-x-auto">
+                      {`const user = await db.query(
+  \`SELECT * FROM users WHERE id = '\${req.query.id}'\`
+);`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
+              <span>DevPulse Continuous Diagnostics Engine</span>
+              <span>v1.0.2</span>
+            </div>
+          </div>
+        </FlowSection>
+
+        {/* Section 2: Database Bottlenecks */}
+        <FlowSection 
+          aria-label="Pre-emptive Database Auditing" 
+          style={{ backgroundColor: '#0c0a09', color: '#ffffff' }}
+          className="border-t border-border/40"
+        >
+          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#f59e0b]">02 / DATABASE AUDITING</span>
+              <span className="font-mono text-xs text-text-faint">INDEX & QUERY OPTIMIZER</span>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
+              <div className="space-y-6">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-[#f59e0b] border border-[#f59e0b]/20 bg-[#f59e0b]/5 px-2.5 py-0.5 rounded inline-block">
+                  / migration query analyzer
+                </div>
+                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
+                  PRE-EMPTIVE<br/>BOTTLENECK DETECTOR
+                </h2>
+                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
+                  Database locks and slow operations are caught before staging. DevPulse evaluates all ORM calls, schema modifications, and migration patterns to catch N+1 query loops, missing index paths, and risky database blocks.
+                </p>
+                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#f59e0b]" /> N+1 Loop Prevention</span>
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#f59e0b]" /> Index Gaps Isolation</span>
+                </div>
+              </div>
+
+              {/* Database Mockup Card */}
+              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
+                <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Query Performance Audit</span>
+                  </div>
+                  <span>92% Conf.</span>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">HIGH SEVERITY</span>
+                    <h4 className="text-sm font-semibold text-foreground">N+1 Relational Query Loop</h4>
+                  </div>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    Executing dynamic subqueries inside user post loop. Triggers 100+ database hits.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="font-mono text-[8px] uppercase tracking-wider text-[#bef264]">✅ Recommended Complete Fix</div>
+                    <pre className="font-mono text-[10px] bg-emerald-950/20 border border-emerald-900/30 text-emerald-300 p-3 rounded-lg overflow-x-auto">
+                      {`// Batch load comments using SQL JOIN
+const postsWithComments = await db.posts.findMany({
+  include: { comments: true }
+});`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
+              <span>DevPulse Query Performance Engine</span>
+              <span>v1.0.2</span>
+            </div>
+          </div>
+        </FlowSection>
+
+        {/* Section 3: Continuous Deployment comments */}
+        <FlowSection 
+          aria-label="Continuous Git Integration" 
+          style={{ backgroundColor: '#18181b', color: '#ffffff' }}
+          className="border-t border-border/40"
+        >
+          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#8b5cf6]">03 / GIT INTEGRATION</span>
+              <span className="font-mono text-xs text-text-faint">AUTOMATED WORKFLOW</span>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
+              <div className="space-y-6">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-[#8b5cf6] border border-[#8b5cf6]/20 bg-[#8b5cf6]/5 px-2.5 py-0.5 rounded inline-block">
+                  / github pr action comment
+                </div>
+                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
+                  CONTINUOUS<br/>PR FEEDBACK LOOP
+                </h2>
+                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
+                  Keep your engineers aligned without leaving their screens. DevPulse writes precise review comments directly onto your GitHub Pull Request timeline or delivers comprehensive SMTP report dashboards to your inbox.
+                </p>
+                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8b5cf6]" /> Github App Webhook</span>
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8b5cf6]" /> Line-by-line Comments</span>
+                </div>
+              </div>
+
+              {/* GitHub Pull Request Comment Mockup Card */}
+              <div className="rounded-xl border border-border bg-bg-elev/80 p-5 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
+                <div className="flex items-center gap-2.5 border-b border-border pb-3 mb-3">
+                  <div className="bg-slate-900 w-8 h-8 rounded-md flex items-center justify-center border border-border">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bef264" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-foreground">DevPulse AI Bot</span>
+                      <span className="rounded bg-primary/10 border border-primary/20 text-primary font-mono text-[8px] font-bold px-1.5 py-0.1 uppercase tracking-wider">App</span>
+                    </div>
+                    <span className="text-[10px] text-text-faint font-mono">reviewed this pull request 4s ago</span>
+                  </div>
+                </div>
+                <div className="space-y-3 font-sans text-xs text-text-muted">
+                  <p>
+                    ⚡ Diagnostics complete for <code className="font-mono bg-bg-soft px-1 rounded text-foreground">api/search.ts</code>. Audit results:
+                  </p>
+                  <ul className="list-disc pl-4 space-y-1.5">
+                    <li><span className="text-red-400 font-semibold">1 Critical issue:</span> SQL Injection risk resolved.</li>
+                    <li><span className="text-amber-400 font-semibold">1 High issue:</span> N+1 performance query query batched.</li>
+                  </ul>
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 font-mono text-[10px] text-primary flex items-center justify-between mt-2">
+                    <span>Health Score: 94 / 100</span>
+                    <span className="font-semibold flex items-center gap-1">Open Interactive Dashboard &rarr;</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
+              <span>DevPulse Pull Request Workflow Integration</span>
+              <span>v1.0.2</span>
+            </div>
+          </div>
+        </FlowSection>
+
+        {/* Section 4: Enterprise metrics & diagnostics velocity */}
+        <FlowSection 
+          aria-label="Enterprise Grade Performance" 
+          style={{ backgroundColor: '#020617', color: '#ffffff' }}
+          className="border-t border-border/40"
+        >
+          <div className="absolute inset-0 bg-grid-white/[0.01] bg-[size:30px_30px] pointer-events-none" />
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-primary">04 / DIAGNOSTIC PERFORMANCE</span>
+              <span className="font-mono text-xs text-text-faint">ENTERPRISE SCALE</span>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-12 items-center my-auto py-12">
+              <div className="space-y-6">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded inline-block">
+                  / lightning fast code audits
+                </div>
+                <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest leading-[1.05] font-sans">
+                  DIAGNOSTIC SPEED<br/>UNTETHERED VELOCITY
+                </h2>
+                <p className="text-sm md:text-base leading-relaxed text-text-muted max-w-[46ch] font-sans">
+                  Engineered to scale for multi-developer teams. Enjoy lightning fast 6.4s diagnostic runs, track comprehensive credits transaction histories, set custom concurrency limits, and export premium reports.
+                </p>
+                <div className="flex flex-wrap gap-4 pt-2 font-mono text-[11px] text-text-muted">
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Avg. Run: 6.4s</span>
+                  <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Enterprise Scaled</span>
+                </div>
+              </div>
+
+              {/* Stats Mockup Card */}
+              <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
+                    <div className="font-sans text-3xl font-extrabold text-primary">94</div>
+                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Avg Health Score</div>
+                  </div>
+                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center">
+                    <div className="font-sans text-3xl font-extrabold text-foreground">6.4s</div>
+                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Review Speed</div>
+                  </div>
+                  <div className="bg-bg-soft/40 border border-border p-4 rounded-xl text-center col-span-2">
+                    <div className="font-sans text-2xl font-bold text-foreground">148 Files</div>
+                    <div className="font-mono text-[8px] uppercase tracking-widest text-text-faint mt-1.5">Audited This Month</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/40 pt-4 flex items-center justify-between font-mono text-xs text-text-faint">
+              <span>DevPulse Scale Diagnostic Dashboard</span>
+              <span>v1.0.2</span>
+            </div>
+          </div>
+        </FlowSection>
+
+      </FlowArt>
+    </div>
   );
 }
 
