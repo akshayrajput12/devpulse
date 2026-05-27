@@ -69,97 +69,172 @@ export async function enqueueFolderAnalysis(folderAnalysisId: string) {
   return data;
 }
 
-// Global active worker state to prevent parallel worker loops in the same instance
-let isWorkerRunning = false;
+let activeWorkersCount = 0;
+let isWorkerPoolActive = false;
+
+// Dynamic concurrency limit parameters with 15s cache TTL
+let cachedConcurrency = 4;
+let lastConfigFetch = 0;
+const CONFIG_TTL_MS = 15000;
+
+async function fetchDynamicConcurrency(sb: any): Promise<number> {
+  const now = Date.now();
+  if (now - lastConfigFetch < CONFIG_TTL_MS) {
+    return cachedConcurrency;
+  }
+  try {
+    const { data } = await sb
+      .from("system_settings")
+      .select("value")
+      .eq("key", "queue_concurrency")
+      .maybeSingle();
+
+    if (data && data.value) {
+      cachedConcurrency = parseInt(data.value, 10) || 4;
+    }
+  } catch (err) {
+    logger.error("queue.fetch_config_failed", { error: err instanceof Error ? err.message : String(err) });
+  }
+  lastConfigFetch = now;
+  return cachedConcurrency;
+}
 
 /**
- * Triggers the background worker loop. This returns immediately so it doesn't block the caller.
+ * Triggers the background worker pool. This returns immediately so it doesn't block the caller.
  */
 export function triggerQueueWorker() {
-  if (isWorkerRunning) return;
-  isWorkerRunning = true;
+  if (isWorkerPoolActive) return;
+  isWorkerPoolActive = true;
   
-  // Execute asynchronous loop without blocking standard request streams
-  runWorkerLoop().catch(err => {
-    logger.error("queue.worker_loop_uncaught", { error: err instanceof Error ? err.message : String(err) });
+  runWorkerPool().catch(err => {
+    logger.error("queue.pool_uncaught_error", { error: err instanceof Error ? err.message : String(err) });
   }).finally(() => {
-    isWorkerRunning = false;
+    isWorkerPoolActive = false;
   });
 }
 
-async function runWorkerLoop() {
+// Graceful Draining SIGTERM & SIGINT Handlers
+let isShutdownSignalReceived = false;
+
+function setupGracefulShutdown() {
+  const handleShutdown = async (signal: string) => {
+    if (isShutdownSignalReceived) return;
+    isShutdownSignalReceived = true;
+    logger.info("queue.shutdown_signal_received", { signal, activeTasks: activeWorkersCount });
+    
+    // Hard lock concurrency to zero to block any new task claims
+    cachedConcurrency = 0;
+    lastConfigFetch = Date.now() + 3600000; // prevent updates for 1 hour
+
+    let attempts = 0;
+    while (activeWorkersCount > 0 && attempts < 30) {
+      logger.info("queue.draining_active_workers", { remaining: activeWorkersCount });
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      attempts++;
+    }
+    
+    logger.info("queue.shutdown_complete");
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+  process.on("SIGINT", () => handleShutdown("SIGINT"));
+}
+
+// Invoke configuration setup once
+setupGracefulShutdown();
+
+async function runWorkerPool() {
   const sb = adminClient();
-  let itemsProcessed = 0;
+  const workerId = `worker-${process.env.HOSTNAME || "node"}-${Math.random().toString(36).slice(2, 6)}`;
 
   while (true) {
-    // Atomically claim next job using SKIP LOCKED database RPC
-    const { data: claim, error: claimErr } = await sb.rpc("claim_next_queue_item", { p_worker_id: "worker-1" });
-    
-    if (claimErr) {
-      logger.error("queue.claim_failed", { error: claimErr.message });
+    if (isShutdownSignalReceived) {
       break;
     }
 
-    // No pending or retryable queue items left
+    const dynamicLimit = await fetchDynamicConcurrency(sb);
+
+    // Yield to event loop if capacity is fully utilized
+    if (activeWorkersCount >= dynamicLimit) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      continue;
+    }
+
+    // Atomically claim next job under dynamic rate limit
+    const { data: claim, error: claimErr } = await sb.rpc("claim_next_queue_item_v3", { 
+      p_worker_id: workerId
+    });
+
+    if (claimErr) {
+      logger.error("queue.claim_failed", { error: claimErr.message });
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      continue;
+    }
+
     if (!claim || claim.length === 0) {
-      break;
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
+      continue;
     }
 
     const item = claim[0];
-    const queueId = item.q_id;
-    const reviewId = item.q_review_id;
-    const folderAnalysisId = item.q_folder_analysis_id;
-    const reviewType = item.q_review_type as ReviewType;
-    const attempts = item.q_attempts;
+    activeWorkersCount++;
 
-    logger.info("queue.processing_item", { queueId, reviewId, folderAnalysisId, reviewType, attempts });
+    processTask(item, sb).finally(() => {
+      activeWorkersCount--;
+    });
+  }
+}
 
-    try {
-      if (reviewType === "folder_analysis") {
-        await processFolderAnalysisJob(folderAnalysisId, sb);
-      } else {
-        // Run standard reviews: PR, codebase audit, API audit
-        await processReviewBackend({ reviewId });
-      }
+async function processTask(item: any, sb: any) {
+  const queueId = item.q_id;
+  const reviewId = item.q_review_id;
+  const folderAnalysisId = item.q_folder_analysis_id;
+  const reviewType = item.q_review_type as ReviewType;
+  const attempts = item.q_attempts;
 
-      // Mark queue item as completed successfully
-      await sb.from("review_queue").update({ status: "completed" }).eq("id", queueId);
-      logger.info("queue.item_completed", { queueId, reviewId, folderAnalysisId });
-    } catch (jobErr) {
-      const errMsg = jobErr instanceof Error ? jobErr.message : String(jobErr);
-      logger.error("queue.item_failed", { queueId, reviewId, folderAnalysisId, error: errMsg });
+  logger.info("queue.processing_item", { queueId, reviewId, folderAnalysisId, reviewType, attempts });
 
-      // Compute exponential backoff for next retry: e.g. 1 min, 5 mins, 15 mins...
-      const backoffMinutes = Math.pow(5, attempts);
-      const nextRetryAt = new Date();
-      nextRetryAt.setMinutes(nextRetryAt.getMinutes() + backoffMinutes);
-
-      const isFinalFailure = attempts >= 3; // Max attempts limit
-      const finalStatus = isFinalFailure ? "failed" : "failed"; // keep failed so it can be retried or marked as dead
-
-      await sb.from("review_queue").update({
-        status: finalStatus,
-        last_error: errMsg,
-        next_retry_at: nextRetryAt.toISOString(),
-      }).eq("id", queueId);
-
-      // Also update target record status so the user gets the error feed
-      if (reviewType === "folder_analysis") {
-        await sb.from("folder_analyses").update({
-          status: "failed",
-          error_message: errMsg,
-        }).eq("id", folderAnalysisId);
-      } else {
-        await sb.from("reviews").update({
-          status: "failed",
-          error_message: errMsg,
-        }).eq("id", reviewId);
-      }
+  try {
+    if (reviewType === "folder_analysis") {
+      await processFolderAnalysisJob(folderAnalysisId, sb);
+    } else {
+      await processReviewBackend({ reviewId });
     }
 
-    itemsProcessed++;
-    // Yield to event loop to avoid CPU starvation
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Mark queue item as completed successfully
+    await sb.from("review_queue").update({ status: "completed" }).eq("id", queueId);
+    logger.info("queue.item_completed", { queueId, reviewId, folderAnalysisId });
+  } catch (jobErr) {
+    const errMsg = jobErr instanceof Error ? jobErr.message : String(jobErr);
+    logger.error("queue.item_failed", { queueId, reviewId, folderAnalysisId, error: errMsg });
+
+    // Compute exponential backoff retry parameters
+    const backoffMinutes = Math.pow(5, attempts);
+    const nextRetryAt = new Date();
+    nextRetryAt.setMinutes(nextRetryAt.getMinutes() + backoffMinutes);
+
+    const isFinalFailure = attempts >= 3;
+    const finalStatus = isFinalFailure ? "failed" : "failed"; 
+
+    await sb.from("review_queue").update({
+      status: finalStatus,
+      last_error: errMsg,
+      next_retry_at: nextRetryAt.toISOString(),
+    }).eq("id", queueId);
+
+    // Sync state reporting to base records
+    if (reviewType === "folder_analysis") {
+      await sb.from("folder_analyses").update({
+        status: "failed",
+        error_message: errMsg,
+      }).eq("id", folderAnalysisId);
+    } else {
+      await sb.from("reviews").update({
+        status: "failed",
+        error_message: errMsg,
+      }).eq("id", reviewId);
+    }
   }
 }
 
