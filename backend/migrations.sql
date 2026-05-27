@@ -44,6 +44,7 @@ VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- 3. High-Capacity claims RPC version 3
+DROP FUNCTION IF EXISTS claim_next_queue_item_v3(text);
 CREATE OR REPLACE FUNCTION claim_next_queue_item_v3(p_worker_id TEXT)
 RETURNS TABLE (
     q_id UUID, -- Fixed: returns UUID to match review_queue.id type
