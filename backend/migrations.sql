@@ -142,3 +142,41 @@ CREATE POLICY "Allow admin adjustments on system_settings" ON system_settings
     FOR ALL TO authenticated
     USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true)
     WITH CHECK ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
+
+-- 5. Auto-Purge Completed Queue Items (Saves Database Storage & Rows)
+CREATE OR REPLACE FUNCTION purge_completed_queue_item() RETURNS trigger AS $$
+BEGIN
+    IF NEW.status = 'completed' THEN
+        DELETE FROM review_queue WHERE id = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trig_purge_completed_queue_item ON review_queue;
+CREATE TRIGGER trig_purge_completed_queue_item
+    AFTER UPDATE OF status ON review_queue
+    FOR EACH ROW
+    EXECUTE FUNCTION purge_completed_queue_item();
+
+-- 6. Storage Guard: Auto-purge older reviews and findings to stay within Supabase 500MB free limit
+CREATE OR REPLACE FUNCTION purge_old_user_reviews() RETURNS trigger AS $$
+DECLARE
+    v_limit INT := 100; -- Max reviews stored per user
+BEGIN
+    DELETE FROM reviews
+    WHERE id IN (
+        SELECT id FROM reviews
+        WHERE user_id = NEW.user_id
+        ORDER BY created_at DESC
+        OFFSET v_limit
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trig_purge_old_user_reviews ON reviews;
+CREATE TRIGGER trig_purge_old_user_reviews
+    AFTER INSERT ON reviews
+    FOR EACH ROW
+    EXECUTE FUNCTION purge_old_user_reviews();
