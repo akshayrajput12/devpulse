@@ -46,7 +46,7 @@ ON CONFLICT (key) DO NOTHING;
 -- 3. High-Capacity claims RPC version 3
 CREATE OR REPLACE FUNCTION claim_next_queue_item_v3(p_worker_id TEXT)
 RETURNS TABLE (
-    q_id BIGINT,
+    q_id UUID, -- Fixed: returns UUID to match review_queue.id type
     q_review_id UUID,
     q_folder_analysis_id UUID,
     q_review_type TEXT,
@@ -54,7 +54,7 @@ RETURNS TABLE (
 ) AS $$
 DECLARE
     v_recent_calls INT;
-    v_claimed_id BIGINT;
+    v_claimed_id UUID; -- Fixed: UUID type
     v_active_keys INT;
     v_rpm_limit INT;
 BEGIN
@@ -79,13 +79,12 @@ BEGIN
     IF v_recent_calls < v_rpm_limit THEN
         UPDATE review_queue
         SET status = 'processing',
-            worker_id = p_worker_id,
             attempts = attempts + 1,
             updated_at = now()
         WHERE id = (
             SELECT id FROM review_queue
             WHERE status = 'pending'
-              AND next_retry_at <= now()
+               OR (status = 'failed' AND attempts < max_attempts AND next_retry_at <= now())
             ORDER BY created_at ASC
             LIMIT 1
             FOR UPDATE SKIP LOCKED -- Enables instant concurrent scaling across multiple instances
