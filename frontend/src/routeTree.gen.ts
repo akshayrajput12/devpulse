@@ -9,6 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FolderAnalysisRouteImport } from './routes/folder-analysis'
@@ -31,6 +34,21 @@ import { Route as AdminCreditsRouteImport } from './routes/admin/credits'
 import { Route as AdminBlogRouteImport } from './routes/admin/blog'
 import { Route as WorkspaceOwnerRepoRouteImport } from './routes/workspace.$owner.$repo'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -146,6 +164,9 @@ export interface FileRoutesByFullPath {
   '/folder-analysis': typeof FolderAnalysisRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -168,6 +189,9 @@ export interface FileRoutesByTo {
   '/folder-analysis': typeof FolderAnalysisRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -192,6 +216,9 @@ export interface FileRoutesById {
   '/folder-analysis': typeof FolderAnalysisRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
   '/admin/reviews': typeof AdminReviewsRoute
@@ -217,6 +244,9 @@ export interface FileRouteTypes {
     | '/folder-analysis'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/admin/blog'
     | '/admin/credits'
     | '/admin/reviews'
@@ -239,6 +269,9 @@ export interface FileRouteTypes {
     | '/folder-analysis'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/admin/blog'
     | '/admin/credits'
     | '/admin/reviews'
@@ -262,6 +295,9 @@ export interface FileRouteTypes {
     | '/folder-analysis'
     | '/login'
     | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
     | '/admin/blog'
     | '/admin/credits'
     | '/admin/reviews'
@@ -286,6 +322,9 @@ export interface RootRouteChildren {
   FolderAnalysisRoute: typeof FolderAnalysisRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundsRoute: typeof RefundsRoute
+  TermsRoute: typeof TermsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   FolderAnalysisIdRoute: typeof FolderAnalysisIdRoute
   RTokenRoute: typeof RTokenRoute
@@ -297,6 +336,27 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -476,6 +536,9 @@ const rootRouteChildren: RootRouteChildren = {
   FolderAnalysisRoute: FolderAnalysisRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundsRoute: RefundsRoute,
+  TermsRoute: TermsRoute,
   BlogSlugRoute: BlogSlugRoute,
   FolderAnalysisIdRoute: FolderAnalysisIdRoute,
   RTokenRoute: RTokenRoute,

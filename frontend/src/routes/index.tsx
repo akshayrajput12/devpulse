@@ -791,10 +791,17 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="py-10">
-      <Container className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="font-mono text-xs text-text-faint">© {new Date().getFullYear()} DevPulse. Made for shipping.</div>
-        <div className="flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs">
+    <footer className="py-12 border-t border-border/40 mt-16 bg-bg-soft/20">
+      <Container className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between font-sans">
+        <div className="space-y-2">
+          <div className="font-mono text-xs text-text-faint">© {new Date().getFullYear()} DevPulse. Made for shipping.</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
+            <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link to="/refunds" className="hover:text-primary transition-colors">Cancellation & Refund Policy</Link>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs text-text-muted shrink-0">
           <span className="h-1.5 w-1.5 rounded-full bg-sev-ok dp-pulse" /> All systems operational
         </div>
       </Container>

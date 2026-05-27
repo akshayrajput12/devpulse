@@ -537,119 +537,574 @@ function ReviewDetail() {
     if (!win) { toast.error("Allow popups for this page to export PDF."); return; }
 
     const esc = (s: string) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const scoreColor = (s: number) => s >= 80 ? "#22c55e" : s >= 60 ? "#f59e0b" : "#ef4444";
+    
+    const scoreColor = (s: number) => s >= 80 ? "#16a34a" : s >= 60 ? "#d97706" : "#dc2626";
+    const scoreBg = (s: number) => s >= 80 ? "#f0fdf4" : s >= 60 ? "#fffbeb" : "#fef2f2";
+    const scoreBorder = (s: number) => s >= 80 ? "#bbf7d0" : s >= 60 ? "#fef08a" : "#fca5a5";
+
+    const SEV_DETAILS: Record<string, { bg: string; text: string; border: string; label: string }> = {
+      crit: { bg: "#fef2f2", text: "#dc2626", border: "#fca5a5", label: "Critical" },
+      high: { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa", label: "High" },
+      med: { bg: "#fefce8", text: "#a16207", border: "#fef08a", label: "Medium" },
+      low: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe", label: "Low" },
+      ok: { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0", label: "Clean" },
+    };
+
+    const CAT_SVG: Record<string, string> = {
+      security: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+      performance: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+      architecture: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`,
+      reliability: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+      testability: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M6 3h12"></path><path d="M12 3v15"></path><path d="M9 12h6"></path><path d="M18 15V3H6v12a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3z"></path></svg>`,
+      readability: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`
+    };
 
     const catCards = CATEGORY_CONFIG.map(cat => {
       const catF = sortedFindings.filter(f => f.category === cat.id && f.severity !== "ok");
-      return `<div style="border:1px solid #27272a;border-radius:10px;padding:16px;background:#18181b;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:16px;">${CAT_EMOJI[cat.id] || ""}</span>
-          <span style="font-weight:700;font-size:13px;color:#e4e4e7;">${cat.label}</span>
-          <span style="margin-left:auto;background:${cat.color}22;color:${cat.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;">${catF.length} issues</span>
+      return `<div class="cat-card">
+        <div class="cat-header">
+          <span style="color:${cat.color};display:flex;align-items:center;justify-content:center;">${CAT_SVG[cat.id] || ""}</span>
+          <span class="cat-title">${cat.label}</span>
+          <span class="cat-badge" style="background:${cat.color}12;color:${cat.color};border:1px solid ${cat.color}25;">${catF.length} issue${catF.length === 1 ? "" : "s"}</span>
         </div>
-        <p style="font-size:11px;color:#71717a;margin:0 0 8px;">${cat.desc}</p>
-        ${catF.slice(0, 4).map(f => `<div style="font-size:11px;color:#a1a1aa;padding:3px 0;border-bottom:1px solid #27272a;display:flex;align-items:center;gap:6px;">
-          <span style="color:${SEV_COLOR[f.severity]};font-size:9px;font-weight:700;font-family:monospace;text-transform:uppercase;">${f.severity}</span>
-          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.title)}</span>
-        </div>`).join("")}
-        ${catF.length > 4 ? `<div style="font-size:10px;color:#52525b;padding-top:4px;">+${catF.length - 4} more</div>` : ""}
+        <p class="cat-desc">${cat.desc}</p>
+        <div class="cat-findings-list">
+          ${catF.slice(0, 4).map(f => {
+            const sd = SEV_DETAILS[f.severity] || { text: "#475569", bg: "#f1f5f9", border: "#e2e8f0", label: f.severity.toUpperCase() };
+            return `<div class="cat-finding-item">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;color:${sd.text};background:${sd.bg};border:1px solid ${sd.border};padding:1px 4px;border-radius:3px;text-transform:uppercase;">${f.severity}</span>
+              <span class="cat-finding-title">${esc(f.title)}</span>
+            </div>`;
+          }).join("")}
+          ${catF.length > 4 ? `<div style="font-size:10px;color:#94a3b8;font-weight:500;padding-top:4px;">+${catF.length - 4} more issues</div>` : ""}
+          ${catF.length === 0 ? `<div style="font-size:11px;color:#16a34a;font-style:italic;display:flex;align-items:center;gap:4px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><polyline points="20 6 9 17 4 12"></polyline></svg> No issues found
+          </div>` : ""}
+        </div>
       </div>`;
     }).join("");
 
-    const findingsHtml = sortedFindings.filter(f => f.severity !== "ok").map((f: Finding, i: number) => `
-      <div style="border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:16px;background:#18181b;page-break-inside:avoid;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <span style="background:${SEV_COLOR[f.severity]}20;color:${SEV_COLOR[f.severity]};padding:4px 10px;border-radius:5px;font-size:10px;font-weight:800;text-transform:uppercase;font-family:monospace;letter-spacing:.5px;">${f.severity}</span>
-          <span style="background:#27272a;color:#a1a1aa;padding:4px 10px;border-radius:5px;font-size:10px;font-family:monospace;">${CAT_EMOJI[f.category] || ""} ${f.category}</span>
-          <span style="margin-left:auto;font-size:10px;color:#52525b;font-family:monospace;">#${i + 1} · ${f.confidence ?? 80}% confidence</span>
+    const findingsHtml = sortedFindings.filter(f => f.severity !== "ok").map((f: Finding, i: number) => {
+      const sd = SEV_DETAILS[f.severity] || { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0", label: f.severity.toUpperCase() };
+      
+      const fileBadge = f.file_path ? `
+        <div class="file-path">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>${esc(f.file_path)}${f.line_start ? `:${f.line_start}` : ""}${f.line_end && f.line_end !== f.line_start ? `–${f.line_end}` : ""}</span>
         </div>
-        <h3 style="margin:0 0 10px;font-size:16px;font-weight:700;color:#fafafa;">${esc(f.title)}</h3>
-        <p style="margin:0 0 14px;font-size:12px;line-height:1.75;color:#a1a1aa;">${esc(f.description)}</p>
-        ${f.file_path ? `<p style="font-family:monospace;font-size:10px;color:#52525b;margin:0 0 14px;background:#09090b;padding:6px 10px;border-radius:5px;border:1px solid #27272a;">📁 ${esc(f.file_path)}${f.line_start ? `:${f.line_start}` : ""}${f.line_end && f.line_end !== f.line_start ? `–${f.line_end}` : ""}</p>` : ""}
-        ${f.bad_code ? `<div style="margin-bottom:14px;">
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#ef4444;margin-bottom:6px;font-family:monospace;font-weight:700;">⛔ What we have (offending code)</div>
-          <pre style="background:#2d0000;border:1px solid #7f1d1d;padding:14px;border-radius:8px;overflow-x:auto;font-size:11px;line-height:1.7;margin:0;white-space:pre-wrap;word-break:break-word;color:#fca5a5;font-family:monospace;">${esc(f.bad_code)}</pre>
-        </div>` : ""}
-        ${f.suggested_fix ? `<div>
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#22c55e;margin-bottom:6px;font-family:monospace;font-weight:700;">✅ What it should be (complete fix)</div>
-          <pre style="background:#00200a;border:1px solid #14532d;padding:14px;border-radius:8px;overflow-x:auto;font-size:11px;line-height:1.7;margin:0;white-space:pre-wrap;word-break:break-word;color:#86efac;font-family:monospace;">${esc(f.suggested_fix)}</pre>
-        </div>` : ""}
-      </div>`).join("\n");
+      ` : "";
+
+      const badCodeBlock = f.bad_code ? `
+        <div class="code-section">
+          <div class="code-title code-title-bad">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span>What we have (offending code)</span>
+          </div>
+          <pre class="code-block code-block-bad">${esc(f.bad_code)}</pre>
+        </div>
+      ` : "";
+
+      const goodCodeBlock = f.suggested_fix ? `
+        <div class="code-section">
+          <div class="code-title code-title-good">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <span>What it should be (complete fix)</span>
+          </div>
+          <pre class="code-block code-block-good">${esc(f.suggested_fix)}</pre>
+        </div>
+      ` : "";
+
+      return `
+      <div class="finding-card">
+        <div class="finding-header">
+          <span class="badge" style="background:${sd.bg};color:${sd.text};border:1px solid ${sd.border};">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 22 22 22 12 2"></polygon><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            &nbsp;${sd.label}
+          </span>
+          <span class="badge badge-category">
+            <span style="display:inline-flex;align-items:center;justify-content:center;margin-right:4px;color:#475569;">
+              ${CAT_SVG[f.category] || ""}
+            </span>
+            ${esc(f.category)}
+          </span>
+          <span class="badge-confidence">
+            #${i + 1} &middot; ${f.confidence ?? 80}% confidence
+          </span>
+        </div>
+        <h3 class="finding-title">${esc(f.title)}</h3>
+        <p class="finding-desc">${esc(f.description)}</p>
+        ${fileBadge}
+        ${badCodeBlock}
+        ${goodCodeBlock}
+      </div>`;
+    }).join("\n");
 
     const filesSection = changedFiles.length > 0 ? `
-      <div style="margin-bottom:32px;">
-        <h2 style="margin:0 0 12px;font-size:16px;font-weight:700;color:#e4e4e7;border-bottom:1px solid #27272a;padding-bottom:8px;">Changed Files (${changedFiles.length})</h2>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          ${changedFiles.map(f => `<span style="font-family:monospace;font-size:10px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;padding:4px 8px;border-radius:5px;">${esc(f)}</span>`).join("")}
+      <div style="margin-bottom: 32px;">
+        <h2 class="section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Changed Files (${changedFiles.length})
+        </h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${changedFiles.map(f => `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#f8fafc;border:1px solid #e2e8f0;color:#475569;padding:4px 10px;border-radius:6px;">${esc(f)}</span>`).join("")}
         </div>
       </div>` : "";
 
     const summarySection = review.summary ? `
-      <div style="border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:32px;background:#18181b;">
-        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#3b82f6;font-family:monospace;font-weight:700;margin-bottom:12px;">AI Summary</div>
-        <div style="font-size:12px;line-height:1.8;color:#a1a1aa;white-space:pre-wrap;">${esc(review.summary)}</div>
+      <div class="summary-box">
+        <div class="summary-title">AI Executive Summary</div>
+        <p class="summary-text">${esc(review.summary)}</p>
       </div>` : "";
 
     win.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>DevPulse Report — ${esc(review.pr_title || "Code Review")}</title>
+  <title>DevPulse Diagnostic Report — ${esc(review.pr_title || "Code Review")}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; background: #09090b; color: #e4e4e7; margin: 0; padding: 0; }
-    .page { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
-    .print-btn { position: fixed; top: 20px; right: 20px; background: #3b82f6; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; z-index: 99; font-family: monospace; letter-spacing: .5px; }
-    .print-btn:hover { background: #2563eb; }
-    @media print {
-      .print-btn { display: none; }
-      body { background: #09090b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #ffffff;
+      color: #334155;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
-    @media (max-width: 700px) { .cat-grid { grid-template-columns: 1fr 1fr; } }
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 40px;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Space Grotesk', sans-serif;
+      color: #0f172a;
+      margin-top: 0;
+    }
+    .btn-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+    .print-btn {
+      background: #0f172a;
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+      transition: all 0.2s ease;
+    }
+    .print-btn:hover {
+      background: #1e293b;
+      transform: translateY(-1px);
+    }
+    @media print {
+      .btn-container { display: none; }
+      body { background: #ffffff; }
+      .page { padding: 20px 10px; }
+    }
+    .header-divider {
+      height: 4px;
+      background: linear-gradient(90deg, #bef264 0%, #15803d 100%);
+      margin-bottom: 24px;
+      border-radius: 2px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 16px;
+      border-radius: 12px;
+    }
+    .meta-item {
+      font-size: 13px;
+    }
+    .meta-label {
+      font-weight: 600;
+      color: #64748b;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .meta-val {
+      color: #1e293b;
+      font-weight: 500;
+    }
+    .score-badge-container {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .score-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px 24px;
+      min-width: 120px;
+      text-align: center;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .score-num {
+      font-size: 38px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .score-lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #64748b;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+    }
+    .severity-bar {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+    }
+    .sev-card {
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-width: 70px;
+    }
+    .sev-card-count {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      line-height: 1.2;
+    }
+    .sev-card-lbl {
+      font-size: 9px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 768px) {
+      .cat-grid { grid-template-columns: 1fr; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .score-badge-container { flex-direction: column; }
+    }
+    .cat-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .cat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .cat-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #0f172a;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .cat-badge {
+      margin-left: auto;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .cat-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+    .cat-findings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cat-finding-item {
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #f1f5f9;
+    }
+    .cat-finding-item:last-child {
+      border-bottom: none;
+    }
+    .cat-finding-title {
+      color: #475569;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 10px;
+      margin: 40px 0 20px 0;
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .summary-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+    .summary-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #15803d;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .summary-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #166534;
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .finding-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -2px rgba(0,0,0,0.02);
+      page-break-inside: avoid;
+    }
+    .finding-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge-category {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    }
+    .badge-confidence {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .finding-title {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .finding-desc {
+      margin: 0 0 16px 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #475569;
+    }
+    .file-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #334155;
+      margin: 0 0 16px 0;
+      background: #f8fafc;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .code-section {
+      margin-bottom: 16px;
+    }
+    .code-section:last-child {
+      margin-bottom: 0;
+    }
+    .code-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .code-title-bad {
+      color: #dc2626;
+    }
+    .code-title-good {
+      color: #16a34a;
+    }
+    pre.code-block {
+      font-family: 'JetBrains Mono', monospace;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 11.5px;
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .code-block-bad {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #dc2626;
+    }
+    .code-block-good {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+    }
+    .footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+    }
   </style>
 </head>
 <body>
-<button class="print-btn" onclick="window.print()">🖨 Save as PDF</button>
+<div class="btn-container">
+  <button class="print-btn" onclick="window.print()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+    Save Report to PDF
+  </button>
+</div>
 <div class="page">
 
-  <!-- Cover -->
-  <div style="border-bottom:1px solid #27272a;padding-bottom:32px;margin-bottom:32px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <div style="background:#3b82f6;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
-        <span style="color:#fff;font-weight:900;font-size:13px;">D</span>
+  <!-- Cover Header -->
+  <div style="border-bottom:1px solid #e2e8f0;padding-bottom:24px;margin-bottom:32px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="background-color:#0f172a;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(15,23,42,0.15);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bef264" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
       </div>
-      <span style="font-family:monospace;font-size:11px;color:#52525b;text-transform:uppercase;letter-spacing:1.5px;">DevPulse · AI Code Review Report</span>
+      <span style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">DevPulse AI &bull; Diagnostic Code Audit</span>
     </div>
-    <h1 style="margin:0 0 8px;font-size:26px;font-weight:800;line-height:1.2;color:#fafafa;">${esc(review.pr_title || "Code Review")}</h1>
-    <div style="font-size:12px;color:#71717a;margin-bottom:20px;font-family:monospace;">
-      ${review.repo_owner ? `${esc(review.repo_owner)}/${esc(review.repo_name)}` : ""}${review.pr_number ? ` · PR #${review.pr_number}` : ""}${review.pr_author ? ` · @${esc(review.pr_author)}` : ""}${review.branch_from ? ` · ${esc(review.branch_from)} → ${esc(review.branch_to || "main")}` : ""}
+    
+    <div class="header-divider"></div>
+    
+    <h1 style="margin:0 0 10px;font-size:28px;font-weight:700;line-height:1.2;color:#0f172a;font-family:'Space Grotesk',sans-serif;">
+      ${esc(review.pr_title || "Code Review Audit Report")}
+    </h1>
+    
+    <div style="font-size:12px;color:#64748b;margin-bottom:24px;font-family:'JetBrains Mono',monospace;">
+      ${review.repo_owner ? `${esc(review.repo_owner)}/${esc(review.repo_name)}` : ""}${review.pr_number ? ` &bull; PR #${review.pr_number}` : ""}${review.pr_author ? ` &bull; @${esc(review.pr_author)}` : ""}${review.branch_from ? ` &bull; ${esc(review.branch_from)} &rarr; ${esc(review.branch_to || "main")}` : ""}
     </div>
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:16px 24px;text-align:center;min-width:100px;">
-        <div style="font-size:40px;font-weight:900;color:${scoreColor(review.health_score || 0)};line-height:1;">${review.health_score ?? "—"}</div>
-        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#52525b;font-family:monospace;margin-top:4px;">Health Score</div>
+
+    <!-- Metadata Grid -->
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">Target Repository</div>
+        <div class="meta-val">${esc(review.repo_owner ?? "Local Source")}/${esc(review.repo_name ?? "Workspace")}</div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <div class="meta-item">
+        <div class="meta-label">Diagnostic Authority</div>
+        <div class="meta-val">DevPulse AI Audit Engine</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Review Date</div>
+        <div class="meta-val">${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Audit Scope Identifier</div>
+        <div class="meta-val" style="font-family:'JetBrains Mono',monospace;font-size:11px;">${id.slice(0, 18)}...</div>
+      </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="score-badge-container">
+      <div class="score-card" style="background:${scoreBg(review.health_score || 0)};border-color:${scoreBorder(review.health_score || 0)};">
+        <div class="score-num" style="color:${scoreColor(review.health_score || 0)};">${review.health_score ?? "—"}</div>
+        <div class="score-lbl">Health Score</div>
+      </div>
+      
+      <div class="severity-bar">
         ${[
-          { sev: "crit", label: "CRIT", c: "#ef4444" },
-          { sev: "high", label: "HIGH", c: "#f97316" },
-          { sev: "med", label: "MED", c: "#eab308" },
-          { sev: "low", label: "LOW", c: "#3b82f6" },
-        ].map(({ sev, label, c }) => {
+          { sev: "crit", label: "Crit", details: SEV_DETAILS.crit },
+          { sev: "high", label: "High", details: SEV_DETAILS.high },
+          { sev: "med", label: "Med", details: SEV_DETAILS.med },
+          { sev: "low", label: "Low", details: SEV_DETAILS.low },
+        ].map(({ sev, label, details }) => {
           const cnt = sortedFindings.filter(f => f.severity === sev).length;
-          return `<div style="background:${c}18;border:1px solid ${c}30;border-radius:8px;padding:10px 16px;text-align:center;">
-            <div style="font-size:22px;font-weight:800;color:${c};">${cnt}</div>
-            <div style="font-size:9px;font-family:monospace;color:${c};text-transform:uppercase;letter-spacing:.5px;">${label}</div>
+          return `<div class="sev-card" style="background:${details.bg};border:1px solid ${details.border};color:${details.text};">
+            <div class="sev-card-count">${cnt}</div>
+            <div class="sev-card-lbl">${details.label}</div>
           </div>`;
         }).join("")}
-        <div style="background:#27272a;border-radius:8px;padding:10px 16px;text-align:center;">
-          <div style="font-size:22px;font-weight:800;color:#e4e4e7;">${sortedFindings.filter(f => f.severity !== "ok").length}</div>
-          <div style="font-size:9px;font-family:monospace;color:#71717a;text-transform:uppercase;letter-spacing:.5px;">Total</div>
+        <div class="sev-card" style="background:#f8fafc;border:1px solid #e2e8f0;color:#334155;">
+          <div class="sev-card-count">${sortedFindings.filter(f => f.severity !== "ok").length}</div>
+          <div class="sev-card-lbl">Total</div>
         </div>
       </div>
     </div>
-    <div style="margin-top:14px;font-size:10px;color:#3f3f46;font-family:monospace;">Review ID: ${id} · Powered by DevPulse AI · ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>
   </div>
 
   ${filesSection}
@@ -657,21 +1112,29 @@ function ReviewDetail() {
 
   <!-- Category Breakdown -->
   <div style="margin-bottom:32px;">
-    <h2 style="margin:0 0 14px;font-size:16px;font-weight:700;color:#e4e4e7;border-bottom:1px solid #27272a;padding-bottom:8px;">Category Breakdown</h2>
+    <h2 class="section-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      Category Breakdown
+    </h2>
     <div class="cat-grid">${catCards}</div>
   </div>
 
   <!-- Findings -->
   <div>
-    <h2 style="margin:0 0 16px;font-size:16px;font-weight:700;color:#e4e4e7;border-bottom:1px solid #27272a;padding-bottom:8px;">
-      All Findings (${sortedFindings.filter(f => f.severity !== "ok").length} issues)
+    <h2 class="section-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      All Detected Findings (${sortedFindings.filter(f => f.severity !== "ok").length} issues)
     </h2>
-    ${findingsHtml || '<p style="color:#52525b;font-size:13px;">No issues found — clean PR!</p>'}
+    ${findingsHtml || `<div style="text-align:center;padding:36px;border:1px dashed #e2e8f0;border-radius:12px;background:#f8fafc;color:#16a34a;font-weight:600;font-family:'Space Grotesk',sans-serif;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      No architectural flaws or vulnerabilities identified in this revision. Code is secure and optimized.
+    </div>`}
   </div>
 
   <!-- Footer -->
-  <div style="margin-top:48px;padding-top:16px;border-top:1px solid #27272a;text-align:center;">
-    <div style="font-size:10px;color:#3f3f46;font-family:monospace;">Generated by DevPulse AI · devpulse.app · ${new Date().toISOString()}</div>
+  <div class="footer">
+    <div>Generated automatically by DevPulse AI Diagnostics &bull; <a href="https://devpulse.app" target="_blank" style="color:#0f172a;font-weight:600;text-decoration:none;">devpulse.app</a></div>
+    <div style="margin-top:4px;font-size:9px;color:#94a3b8;">Report SHA: ${id} &bull; ${new Date().toISOString()}</div>
   </div>
 </div>
 </body>
