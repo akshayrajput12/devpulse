@@ -104,3 +104,41 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- 4. Enable Row Level Security and add Policies for Authenticated Admin authorization
+ALTER TABLE system_ai_keys ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow select for authenticated admins" ON system_ai_keys;
+CREATE POLICY "Allow select for authenticated admins" ON system_ai_keys
+    FOR SELECT TO authenticated
+    USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
+
+DROP POLICY IF EXISTS "Allow insert for authenticated admins" ON system_ai_keys;
+CREATE POLICY "Allow insert for authenticated admins" ON system_ai_keys
+    FOR INSERT TO authenticated
+    WITH CHECK ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
+
+DROP POLICY IF EXISTS "Allow update for authenticated admins" ON system_ai_keys;
+CREATE POLICY "Allow update for authenticated admins" ON system_ai_keys
+    FOR UPDATE TO authenticated
+    USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true)
+    WITH CHECK ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
+
+DROP POLICY IF EXISTS "Allow delete for authenticated admins" ON system_ai_keys;
+CREATE POLICY "Allow delete for authenticated admins" ON system_ai_keys
+    FOR DELETE TO authenticated
+    USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
+
+-- Enable RLS and establish policies for system_settings parameters
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow select system_settings for all authenticated users" ON system_settings;
+CREATE POLICY "Allow select system_settings for all authenticated users" ON system_settings
+    FOR SELECT TO authenticated
+    USING (true);
+
+DROP POLICY IF EXISTS "Allow admin adjustments on system_settings" ON system_settings;
+CREATE POLICY "Allow admin adjustments on system_settings" ON system_settings
+    FOR ALL TO authenticated
+    USING ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true)
+    WITH CHECK ((SELECT is_admin FROM profiles WHERE id = auth.uid()) = true);
