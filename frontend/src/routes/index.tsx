@@ -127,6 +127,17 @@ function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTM
   const scale   = useTransform(scrollYProgress, [0, 0.8], [0.78, 1]);
   const glowOp  = useTransform(scrollYProgress, [0.5, 0.85], [0, 1]);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const updateSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   return (
     <motion.div
       className="w-full flex justify-center items-end mt-2 sm:mt-6"
@@ -135,9 +146,9 @@ function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTM
       <motion.div
         className="relative w-full"
         style={{
-          maxWidth: isFullSize ? "min(1100px, 92vw)" : "min(820px, 88vw)",
-          rotateX,
-          scale,
+          maxWidth: isMobile ? "min(820px, 88vw)" : (isFullSize ? "min(1100px, 92vw)" : "min(820px, 88vw)"),
+          rotateX: isMobile ? 0 : rotateX,
+          scale: isMobile ? 1 : scale,
           transformOrigin: "center bottom",
           transition: "max-width 0.7s cubic-bezier(0.4,0,0.2,1)",
         }}
@@ -260,6 +271,10 @@ function HeroStickyContent() {
 
   // Programmatically trigger video playback when scroll reaches >= 75% full scale
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (window.innerWidth < 768) {
+      // Keep playing on mobile, don't trigger pause
+      return;
+    }
     const full = latest >= 0.75;
     setIsFullSize(full);
     if (videoRef.current) {
