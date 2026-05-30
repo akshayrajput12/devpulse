@@ -159,24 +159,35 @@ CREATE TRIGGER trig_purge_completed_queue_item
     FOR EACH ROW
     EXECUTE FUNCTION purge_completed_queue_item();
 
--- 6. Storage Guard: Auto-purge older reviews and findings to stay within Supabase 500MB free limit
-CREATE OR REPLACE FUNCTION purge_old_user_reviews() RETURNS trigger AS $$
+-- 6. Storage Guard: Auto-archive heavy code blocks for older reviews while retaining statistics to stay within Supabase limits
+CREATE OR REPLACE FUNCTION archive_old_detailed_findings() RETURNS trigger AS $$
 DECLARE
-    v_limit INT := 100; -- Max reviews stored per user
+    v_review_limit INT := 20; -- Keep full code snippets for the latest 20 reviews
+    v_target_user_id UUID;
 BEGIN
-    DELETE FROM reviews
-    WHERE id IN (
-        SELECT id FROM reviews
-        WHERE user_id = NEW.user_id
-        ORDER BY created_at DESC
-        OFFSET v_limit
-    );
+    -- Resolve user_id from the newly inserted review record
+    SELECT user_id INTO v_target_user_id FROM reviews WHERE id = NEW.id;
+
+    IF v_target_user_id IS NOT NULL THEN
+        -- Nullify heavy code columns on findings older than the latest 20 reviews
+        UPDATE findings
+        SET bad_code = NULL,
+            suggested_fix = NULL,
+            description = 'Detailed code snippet archived to preserve database limits. Metrics retained.'
+        WHERE review_id IN (
+            SELECT id FROM reviews
+            WHERE user_id = v_target_user_id
+            ORDER BY created_at DESC
+            OFFSET v_review_limit
+        );
+    END IF;
+    
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trig_purge_old_user_reviews ON reviews;
-CREATE TRIGGER trig_purge_old_user_reviews
+DROP TRIGGER IF EXISTS trig_archive_old_detailed_findings ON reviews;
+CREATE TRIGGER trig_archive_old_detailed_findings
     AFTER INSERT ON reviews
     FOR EACH ROW
-    EXECUTE FUNCTION purge_old_user_reviews();
+    EXECUTE FUNCTION archive_old_detailed_findings();

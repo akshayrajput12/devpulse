@@ -937,8 +937,29 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   return res.status(status).json({ error: message });
 });
 
+// Health Check Endpoint (Lightweight status check for CDNs and pingers)
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`[Server] Express API server running on http://localhost:${PORT}`);
   console.log(`[Server] Dynamic CORS configured for frontend at: ${allowedOrigins.join(", ")}`);
+  
+  // Render Free Tier Keep-Alive pinger
+  const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+  if (RENDER_EXTERNAL_URL) {
+    const pingerInterval = 10 * 60 * 1000; // 10 minutes (spins down after 15m)
+    setInterval(() => {
+      fetch(`${RENDER_EXTERNAL_URL}/health`)
+        .then(res => {
+          console.log(`[Keep-Alive] Self-ping status: ${res.status} at ${new Date().toISOString()}`);
+        })
+        .catch(err => {
+          console.error(`[Keep-Alive] Self-ping failed:`, err instanceof Error ? err.message : String(err));
+        });
+    }, pingerInterval);
+    console.log(`[Keep-Alive] Configured active self-pinger to: ${RENDER_EXTERNAL_URL}/health`);
+  }
 });
