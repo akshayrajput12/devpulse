@@ -216,8 +216,15 @@ export const StaggerTestimonials: React.FC = () => {
 
   useEffect(() => {
     const updateSize = () => {
-      const { matches } = window.matchMedia("(min-width: 640px)");
-      setCardSize(matches ? 365 : 285);
+      const width = window.innerWidth;
+      if (width >= 640) {
+        setCardSize(365);
+      } else if (width >= 400) {
+        setCardSize(285);
+      } else {
+        // Smoothly scale down on ultra-narrow screens down to 240px
+        setCardSize(Math.max(240, width - 40));
+      }
     };
 
     updateSize();

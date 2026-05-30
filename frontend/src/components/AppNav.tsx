@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Zap, Info, ShieldAlert, Sparkles, User as UserIcon, Calendar, LayoutDashboard, LogOut, X } from "lucide-react";
+import { Activity, Zap, Info, ShieldAlert, Sparkles, User as UserIcon, Calendar, LayoutDashboard, LogOut, X, Menu } from "lucide-react";
 import { useAuth, signOut } from "@/lib/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
@@ -23,6 +23,7 @@ export function AppNav() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -319,10 +320,63 @@ export function AppNav() {
               </Link>
             </>
           )}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-bg-soft/40 text-text-muted transition hover:bg-bg-soft hover:text-foreground md:hidden cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
         </div>
       </div>
 
-
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="border-b border-border bg-bg/95 backdrop-blur-xl md:hidden animate-in slide-in-from-top-4 duration-200">
+          <nav className="flex flex-col gap-4 px-6 py-5 text-sm font-medium text-text-muted">
+            <a 
+              href="#features" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-foreground py-1 transition-colors"
+            >
+              Features
+            </a>
+            <Link 
+              to="/pricing" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-foreground py-1 transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link 
+              to="/blog" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-foreground py-1 transition-colors"
+            >
+              Blog
+            </Link>
+            {user && (
+              <Link 
+                to="/dashboard" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-foreground py-1 transition-colors"
+              >
+                Dashboard
+              </Link>
+            )}
+            {user && (
+              <Link 
+                to="/folder-analysis" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="hover:text-foreground py-1 transition-colors flex items-center gap-1.5"
+              >
+                Folder Analysis
+                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary leading-none">AI</span>
+              </Link>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

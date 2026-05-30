@@ -297,15 +297,17 @@ function HeroStickyContent() {
 
         <form
           onSubmit={(e) => { e.preventDefault(); navigate({ to: "/reviews/new", search: { url } }); }}
-          className="flex w-full max-w-[560px] items-center gap-2 rounded-lg border border-border bg-bg-elev p-1.5 transition focus-within:border-primary"
+          className="flex flex-col sm:flex-row w-full max-w-[560px] items-stretch sm:items-center gap-2 rounded-lg border border-border bg-bg-elev p-1.5 transition focus-within:border-primary"
         >
-          <Github className="ml-2 h-4 w-4 text-text-muted" />
-          <input
-            value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://github.com/owner/repo/pull/123"
-            className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm outline-none placeholder:text-text-faint"
-          />
-          <button className="inline-flex items-center gap-1 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px cursor-pointer">
+          <div className="flex items-center flex-1 min-w-0 gap-2 px-2 py-0.5">
+            <Github className="h-4 w-4 text-text-muted shrink-0" />
+            <input
+              value={url} onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://github.com/owner/repo/pull/123"
+              className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm outline-none placeholder:text-text-faint"
+            />
+          </div>
+          <button className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3.5 py-2.5 sm:py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px cursor-pointer">
             Review <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </form>
@@ -1302,7 +1304,7 @@ function BlogCarouselSection() {
           {blogs.map((post) => (
             <div
               key={post.id}
-              className="min-w-[300px] md:min-w-[380px] max-w-[380px] snap-start flex-shrink-0 group rounded-2xl border border-border bg-bg-elev/40 p-6 flex flex-col justify-between hover:border-primary/40 hover:shadow-[0_0_40px_-20px_rgba(190,242,100,0.15)] transition-all duration-300"
+              className="min-w-[270px] sm:min-w-[380px] max-w-[calc(100vw-3rem)] sm:max-w-[380px] snap-start flex-shrink-0 group rounded-2xl border border-border bg-bg-elev/40 p-5 sm:p-6 flex flex-col justify-between hover:border-primary/40 hover:shadow-[0_0_40px_-20px_rgba(190,242,100,0.15)] transition-all duration-300"
             >
               <div>
                 {/* Visual card header */}
