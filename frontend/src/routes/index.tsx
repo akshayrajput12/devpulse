@@ -129,7 +129,7 @@ function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTM
 
   return (
     <motion.div
-      className="w-full flex justify-center items-end mt-6"
+      className="w-full flex justify-center items-end mt-2 sm:mt-6"
       style={{ perspective: "1200px" }}
     >
       <motion.div
@@ -272,26 +272,26 @@ function HeroStickyContent() {
   });
 
   return (
-    <ContainerSticky className="bg-bg text-foreground px-6 py-8 flex flex-col justify-between items-center border-b border-border min-h-screen">
+    <ContainerSticky className="bg-bg text-foreground px-4 sm:px-6 py-4 sm:py-8 flex flex-col justify-between items-center border-b border-border min-h-screen">
       <div className="absolute inset-0 dp-grid-bg opacity-30 pointer-events-none" />
       <div className="absolute left-1/2 top-1/2 -z-10 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, rgba(190,242,100,0.08), transparent 70%)" }} />
 
       {/* Top Spacer */}
-      <div className="h-2" />
+      <div className="h-1 sm:h-2" />
 
       {/* Main Animated Headers, Form, and Meta */}
-      <ContainerAnimated className="space-y-5 text-center flex flex-col items-center max-w-4xl mx-auto">
-        <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-xs">
+      <ContainerAnimated className="space-y-3 sm:space-y-5 text-center flex flex-col items-center max-w-4xl mx-auto w-full">
+        <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-elev px-3 py-1 font-mono text-[10px] sm:text-xs">
           <span className="h-1.5 w-1.5 rounded-full bg-sev-ok dp-pulse" />
           <span className="text-text-muted">NEW —</span>
           <span>GitHub App now available</span>
         </motion.div>
 
-        <h1 className="tracking-tightest font-medium leading-[1.02] text-center text-foreground font-sans" style={{ fontSize: "clamp(32px, 5.5vw, 64px)" }}>
+        <h1 className="tracking-tightest font-medium leading-[1.05] text-center text-foreground font-sans px-2" style={{ fontSize: "clamp(24px, 5.5vw, 64px)" }}>
           AI code reviews that <span className="text-primary">survive review</span>.<span className="dp-blink ml-1 font-thin">|</span>
         </h1>
 
-        <p className="max-w-[56ch] text-[16px] md:text-[18px] leading-relaxed text-text-muted text-center font-sans">
+        <p className="max-w-[56ch] text-xs sm:text-sm md:text-base leading-relaxed text-text-muted text-center font-sans px-4">
           Paste a GitHub PR URL. Get a severity-ranked review with line-by-line fixes in under 10 seconds. No senior dev required.
         </p>
 
@@ -299,20 +299,20 @@ function HeroStickyContent() {
           onSubmit={(e) => { e.preventDefault(); navigate({ to: "/reviews/new", search: { url } }); }}
           className="flex flex-col sm:flex-row w-full max-w-[560px] items-stretch sm:items-center gap-2 rounded-lg border border-border bg-bg-elev p-1.5 transition focus-within:border-primary"
         >
-          <div className="flex items-center flex-1 min-w-0 gap-2 px-2 py-0.5">
+          <div className="flex items-center flex-1 min-w-0 gap-2 px-2 py-0">
             <Github className="h-4 w-4 text-text-muted shrink-0" />
             <input
               value={url} onChange={(e) => setUrl(e.target.value)}
               placeholder="https://github.com/owner/repo/pull/123"
-              className="min-w-0 flex-1 bg-transparent py-2 font-mono text-sm outline-none placeholder:text-text-faint"
+              className="min-w-0 flex-1 bg-transparent py-1.5 sm:py-2 font-mono text-xs sm:text-sm outline-none placeholder:text-text-faint"
             />
           </div>
-          <button className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3.5 py-2.5 sm:py-2 text-sm font-medium text-primary-foreground transition hover:-translate-y-px cursor-pointer">
+          <button className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 sm:px-4 py-2 sm:py-2 text-xs sm:text-sm font-medium text-primary-foreground transition hover:-translate-y-px cursor-pointer shrink-0">
             Review <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </form>
 
-        <div className="flex flex-wrap justify-center items-center gap-4 font-mono text-xs text-text-muted">
+        <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 font-mono text-[10px] sm:text-xs text-text-muted px-2">
           <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> No card required</span>
           <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> 10 free reviews</span>
           <span className="inline-flex items-center gap-1"><Check className="h-3 w-3 text-sev-ok" /> Public repos work</span>
@@ -327,15 +327,15 @@ function HeroStickyContent() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: isFullSize ? 0 : 0.8, y: 0 }}
         transition={{ delay: 0.6, duration: 0.4 }}
-        className="mt-6 flex flex-col items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-muted select-none pointer-events-none"
+        className="mt-2 sm:mt-6 flex flex-col items-center gap-1 font-mono text-[8px] sm:text-[9px] uppercase tracking-widest text-text-muted select-none pointer-events-none opacity-80 sm:opacity-100"
       >
         <span>Scroll to see how it works</span>
         <motion.div 
           animate={{ y: [0, 4, 0] }}
           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-          className="flex h-5 w-3 justify-center rounded-full border border-text-muted/40 p-0.5"
+          className="flex h-4 w-2.5 justify-center rounded-full border border-text-muted/40 p-0.5"
         >
-          <div className="h-1.5 w-1 rounded-full bg-primary" />
+          <div className="h-1 w-0.5 rounded-full bg-primary" />
         </motion.div>
       </motion.div>
     </ContainerSticky>

@@ -97,11 +97,20 @@ export function AppNav() {
                 onClick={() => setShowTooltip(prev => !prev)}
               >
                 <button
-                  className="flex items-center gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-3 py-1 font-mono text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10 cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 px-2 sm:px-3 py-1 font-mono text-[10px] sm:text-xs font-semibold text-orange-400 shadow-sm transition hover:bg-orange-500/10 cursor-pointer shrink-0"
                   title="View detailed credit ledger"
                 >
-                  <Zap className="h-3.5 w-3.5 text-orange-400 fill-orange-400/20" />
-                  <span>{profile ? `${profile.review_credits} credits` : "loading..."}</span>
+                  <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-orange-400 fill-orange-400/20 shrink-0" />
+                  <span>
+                    {profile ? (
+                      <>
+                        <span className="inline sm:hidden">{profile.review_credits} cr</span>
+                        <span className="hidden sm:inline">{profile.review_credits} credits</span>
+                      </>
+                    ) : (
+                      "..."
+                    )}
+                  </span>
                 </button>
 
                 {/* Custom Gorgeous Dropdown Tooltip */}
@@ -153,7 +162,7 @@ export function AppNav() {
                 <button
                   id="tour-profile-menu"
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center gap-2 rounded-full border border-border bg-bg-soft/40 p-0.5 pr-2.5 transition hover:bg-bg-soft hover:border-text-muted cursor-pointer"
+                  className="flex items-center gap-1 sm:gap-2 rounded-full border border-border bg-bg-soft/40 p-0.5 sm:pr-2.5 transition hover:bg-bg-soft hover:border-text-muted cursor-pointer shrink-0"
                 >
                   {profile?.avatar_url ? (
                     <img
