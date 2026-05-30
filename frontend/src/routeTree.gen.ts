@@ -30,6 +30,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog_.$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
+import { Route as AdminFeedbackRouteImport } from './routes/admin/feedback'
 import { Route as AdminCreditsRouteImport } from './routes/admin/credits'
 import { Route as AdminBlogRouteImport } from './routes/admin/blog'
 import { Route as WorkspaceOwnerRepoRouteImport } from './routes/workspace.$owner.$repo'
@@ -139,6 +140,11 @@ const AdminReviewsRoute = AdminReviewsRouteImport.update({
   path: '/reviews',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFeedbackRoute = AdminFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCreditsRoute = AdminCreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
+    | '/admin/feedback'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
+    | '/admin/feedback'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
+    | '/admin/feedback'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/users'
@@ -483,6 +495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReviewsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/feedback': {
+      id: '/admin/feedback'
+      path: '/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AdminFeedbackRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/credits': {
       id: '/admin/credits'
       path: '/credits'
@@ -510,6 +529,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminBlogRoute: typeof AdminBlogRoute
   AdminCreditsRoute: typeof AdminCreditsRoute
+  AdminFeedbackRoute: typeof AdminFeedbackRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -519,6 +539,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBlogRoute: AdminBlogRoute,
   AdminCreditsRoute: AdminCreditsRoute,
+  AdminFeedbackRoute: AdminFeedbackRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,

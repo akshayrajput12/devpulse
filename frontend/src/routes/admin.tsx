@@ -15,6 +15,9 @@ import {
   ActivityIcon,
 } from "@/components/AnimatedIcons";
 import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
+
+const FeedbackIcon = (props: any) => <MessageSquare {...props} className="h-4 w-4 shrink-0" />;
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayout,
@@ -78,6 +81,7 @@ function AdminLayout() {
     { label: "Reviews", to: "/admin/reviews", icon: ReviewIcon },
     { label: "Users", to: "/admin/users", icon: UsersIcon },
     { label: "Credits", to: "/admin/credits", icon: ActivityIcon },
+    { label: "Feedback", to: "/admin/feedback", icon: FeedbackIcon },
     { label: "AI Settings", to: "/admin/settings", icon: SettingsIcon },
     { label: "Blogs", to: "/admin/blog", icon: BlogIcon },
   ];
