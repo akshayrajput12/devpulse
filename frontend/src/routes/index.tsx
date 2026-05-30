@@ -653,6 +653,120 @@ function LiveDemo() {
   );
 }
 
+function InteractiveVulnerabilityAudit() {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStep((s) => (s === 0 ? 1 : 0));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full max-w-[480px] min-h-[350px] overflow-hidden rounded-xl border border-border bg-bg-elev/80 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md flex flex-col justify-between font-sans">
+      {/* Card Header */}
+      <div className="flex items-center justify-between border-b border-border/50 px-5 py-3.5 font-mono text-[10px] text-text-muted bg-bg-soft/30">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-2 w-2 rounded-full", step === 0 ? "bg-red-500 animate-pulse" : "bg-primary animate-pulse")} />
+          <span>{step === 0 ? "VULNERABILITY DETECTED" : "REMEDIATION APPROVED"}</span>
+        </div>
+        <span className="font-semibold text-text-faint">{step === 0 ? "98% CONFIDENCE" : "FIX VERIFIED"}</span>
+      </div>
+
+      {/* Steps Selector tabs */}
+      <div className="px-5 pt-3.5 flex gap-2">
+        <button
+          onClick={() => setStep(0)}
+          className={cn(
+            "flex-1 py-1.5 px-3 rounded-lg border font-mono text-[10px] font-bold transition-all duration-200 cursor-pointer select-none text-center outline-none",
+            step === 0 
+              ? "bg-red-500/10 border-red-500/35 text-red-500 shadow-sm" 
+              : "bg-bg-soft/30 border-transparent text-text-muted hover:text-foreground"
+          )}
+        >
+          ⛔ OFFENDING CODE
+        </button>
+        <button
+          onClick={() => setStep(1)}
+          className={cn(
+            "flex-1 py-1.5 px-3 rounded-lg border font-mono text-[10px] font-bold transition-all duration-200 cursor-pointer select-none text-center outline-none",
+            step === 1 
+              ? "bg-primary/10 border-primary/35 text-primary shadow-sm" 
+              : "bg-bg-soft/30 border-transparent text-text-muted hover:text-foreground"
+          )}
+        >
+          ✅ SECURE CORRECTION
+        </button>
+      </div>
+
+      {/* Slide Content Area */}
+      <div className="relative flex-1 p-5 overflow-hidden min-h-[220px]">
+        <AnimatePresence mode="wait">
+          {step === 0 ? (
+            <motion.div
+              key="vulnerable"
+              initial={{ x: -15, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 15, opacity: 0 }}
+              transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="space-y-3 h-full flex flex-col justify-between"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-red-500/10 border border-red-500/20 text-red-500 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">CRITICAL</span>
+                  <h4 className="text-sm font-semibold text-foreground">SQL Injection in User Lookup</h4>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Unparameterized variable concatenation detected in Raw PostgreSQL query loop.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="font-mono text-[9px] uppercase tracking-wider text-red-500/80 font-bold">⛔ Offending Code Line:</div>
+                <pre className="font-mono text-[10px] bg-red-500/5 dark:bg-red-950/15 border border-red-500/20 dark:border-red-900/25 text-red-600 dark:text-red-400 p-3 rounded-lg overflow-x-auto">
+                  {`const user = await db.query(
+  \`SELECT * FROM users WHERE id = '\${req.query.id}'\`
+);`}
+                </pre>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="fixed"
+              initial={{ x: -15, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 15, opacity: 0 }}
+              transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="space-y-3 h-full flex flex-col justify-between"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-primary/10 border border-primary/20 text-primary font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">RESOLVED</span>
+                  <h4 className="text-sm font-semibold text-foreground">Parameterized Query Remediated</h4>
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Secure parameter binding isolates values from query statement execution blocks.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="font-mono text-[9px] uppercase tracking-wider text-primary font-bold">✅ Approved Remediation Fix:</div>
+                <pre className="font-mono text-[10px] bg-primary/5 dark:bg-primary-ink/10 border border-primary/25 dark:border-primary/20 text-primary p-3 rounded-lg overflow-x-auto">
+                  {`const user = await db.query(
+  'SELECT * FROM users WHERE id = $1',
+  [req.query.id]
+);`}
+                </pre>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 const FEATURES = [
   { icon: Zap, t: "10-second reviews", d: "Streaming output, not 'spinner for 30s'. You see issues as they land." },
   { icon: Shield, t: "Severity-ranked", d: "Crit · High · Med · Low. Fix what matters, ignore the nits." },
@@ -677,34 +791,7 @@ function Features() {
           checks={["OWASP Top 10 Audits", "Zero Data Persistence"]}
           checkColor="text-primary"
           footerText="DevPulse Continuous Diagnostics Engine"
-          mockup={
-            <div className="rounded-xl border border-border bg-bg-elev/80 p-6 shadow-[0_4px_30px_rgba(0,0,0,0.3)] backdrop-blur-md w-full max-w-[480px]">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4 font-mono text-[11px] text-text-muted">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                  <span>Vulnerability Diagnostic</span>
-                </div>
-                <span>98% Conf.</span>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 font-mono text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">CRITICAL</span>
-                  <h4 className="text-sm font-semibold text-foreground">SQL Injection in User Lookup</h4>
-                </div>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  Unparameterized variable concatenation detected in Raw PostgreSQL query loop.
-                </p>
-                <div className="space-y-2">
-                  <div className="font-mono text-[8px] uppercase tracking-wider text-red-600 dark:text-red-400">⛔ Offending Code</div>
-                  <pre className="font-mono text-[10px] bg-red-500/5 dark:bg-red-950/20 border border-red-500/25 dark:border-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg overflow-x-auto">
-                    {`const user = await db.query(
-  \`SELECT * FROM users WHERE id = '\${req.query.id}'\`
-);`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          }
+          mockup={<InteractiveVulnerabilityAudit />}
         />
 
         {/* Section 2: Database Bottlenecks */}
