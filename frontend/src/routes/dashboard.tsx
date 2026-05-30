@@ -206,7 +206,7 @@ function Dashboard() {
       const { error } = await supabase
         .from("profiles")
         .update({ display_name: editDisplayName.trim(), updated_at: new Date().toISOString() })
-        .eq("id", user?.id);
+        .eq("id", user?.id as string);
       if (error) throw error;
       toast.success("Profile updated successfully!");
       fetchProfile();

@@ -77,6 +77,7 @@ import { supabase } from "@/integrations/supabase/client.js";
 import { useState, useEffect } from "react";
 import { ShieldAlert, KeyRound, Eye, EyeOff } from "lucide-react";
 import { BlockedModal } from "@/components/BlockedModal";
+import { FeedbackModal } from "@/components/FeedbackModal";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -133,10 +134,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       const { error: authError } = await supabase.auth.updateUser({ password });
       if (authError) throw authError;
 
-      const { error: dbError } = await supabase
+      const { error: dbError } = await (supabase
         .from("profiles")
-        .update({ has_password: true })
-        .eq("id", user.id);
+        .update({ has_password: true } as any)
+        .eq("id", user.id) as any);
       if (dbError) throw dbError;
 
       toast.success("Password configured successfully!");
@@ -220,6 +221,7 @@ function RootComponent() {
       <ThemeProvider>
         <AuthGuard>
           <Outlet />
+          <FeedbackModal />
         </AuthGuard>
         <ThemedToaster />
       </ThemeProvider>

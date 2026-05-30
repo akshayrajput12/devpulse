@@ -119,7 +119,7 @@ export function SpotlightCard({
   );
 }
 
-function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTMLVideoElement>; isFullSize: boolean }) {
+function MacbookMockup({ videoRef, isFullSize }: { videoRef: React.RefObject<HTMLVideoElement | null>; isFullSize: boolean }) {
   const { scrollYProgress } = useContainerScrollContext();
   // Perspective tilt: starts tilted back, flattens as user scrolls
   const rotateX = useTransform(scrollYProgress, [0, 0.7], [22, 0]);

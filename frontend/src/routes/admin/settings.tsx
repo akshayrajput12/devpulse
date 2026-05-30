@@ -57,8 +57,8 @@ function AdminSettings() {
           console.error("Failed to load AI settings:", err);
           return { ai_provider: "both", parallel_engine_enabled: true };
         }),
-        supabase.from("system_settings").select("*"),
-        supabase.from("system_ai_keys").select("*").order("created_at", { ascending: false }),
+        (supabase.from("system_settings" as any) as any).select("*"),
+        (supabase.from("system_ai_keys" as any) as any).select("*").order("created_at", { ascending: false }),
       ]);
       setMetrics(metricsRes.metrics);
       if (settingsRes && settingsRes.ai_provider) {
@@ -69,8 +69,9 @@ function AdminSettings() {
       }
       // Populate dynamic DB configurations
       if (dbSettingsRes.data) {
-        const concurrencyVal = dbSettingsRes.data.find(x => x.key === "queue_concurrency")?.value;
-        const rpmVal = dbSettingsRes.data.find(x => x.key === "global_rpm_limit")?.value;
+        const settingsList = dbSettingsRes.data as any[];
+        const concurrencyVal = settingsList.find(x => x.key === "queue_concurrency")?.value;
+        const rpmVal = settingsList.find(x => x.key === "global_rpm_limit")?.value;
         if (concurrencyVal) setQueueConcurrency(parseInt(concurrencyVal, 10) || 4);
         if (rpmVal) setGlobalRpmLimit(parseInt(rpmVal, 10) || 100);
       }
@@ -133,13 +134,11 @@ function AdminSettings() {
   const handleSaveQueueConfig = async () => {
     setSavingQueueConfig(true);
     try {
-      const { error: err1 } = await supabase
-        .from("system_settings")
-        .upsert({ key: "queue_concurrency", value: String(queueConcurrency), updated_at: new Date().toISOString() });
+      const { error: err1 } = await (supabase.from("system_settings" as any) as any)
+        .upsert({ key: "queue_concurrency", value: String(queueConcurrency), updated_at: new Date().toISOString() } as any);
         
-      const { error: err2 } = await supabase
-        .from("system_settings")
-        .upsert({ key: "global_rpm_limit", value: String(globalRpmLimit), updated_at: new Date().toISOString() });
+      const { error: err2 } = await (supabase.from("system_settings" as any) as any)
+        .upsert({ key: "global_rpm_limit", value: String(globalRpmLimit), updated_at: new Date().toISOString() } as any);
 
       if (err1 || err2) throw new Error(err1?.message || err2?.message || "Failed to save configurations");
       toast.success("High-capacity queue configurations saved successfully!");
@@ -152,8 +151,7 @@ function AdminSettings() {
 
   const handleToggleKey = async (id: string, is_active: boolean) => {
     try {
-      const { error } = await supabase
-        .from("system_ai_keys")
+      const { error } = await (supabase.from("system_ai_keys" as any) as any)
         .update({ is_active, updated_at: new Date().toISOString() })
         .eq("id", id);
 
@@ -168,8 +166,7 @@ function AdminSettings() {
   const handleDeleteKey = async (id: string) => {
     if (!confirm("Are you sure you want to delete this API key from the rotation pool?")) return;
     try {
-      const { error } = await supabase
-        .from("system_ai_keys")
+      const { error } = await (supabase.from("system_ai_keys" as any) as any)
         .delete()
         .eq("id", id);
 
@@ -190,8 +187,7 @@ function AdminSettings() {
     setSavingNewKey(true);
     try {
       const label = newKeyLabel.trim() || `${newKeyProvider.toUpperCase()} Key - ${new Date().toLocaleDateString()}`;
-      const { data, error } = await supabase
-        .from("system_ai_keys")
+      const { data, error } = await (supabase.from("system_ai_keys" as any) as any)
         .insert({
           provider: newKeyProvider,
           api_key_encrypted: newKeyContent.trim(),

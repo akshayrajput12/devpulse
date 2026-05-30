@@ -13,6 +13,7 @@ interface TimelineContentProps {
   };
   className?: string;
   as?: any;
+  [key: string]: any;
 }
 
 export function TimelineContent({
@@ -22,6 +23,7 @@ export function TimelineContent({
   customVariants,
   className,
   as = "div",
+  ...props
 }: TimelineContentProps) {
   const internalRef = useRef(null);
   const isInView = useInView(timelineRef || internalRef, { once: true, margin: "-10% 0px" });
@@ -55,6 +57,7 @@ export function TimelineContent({
       custom={animationNum}
       variants={variants}
       className={className}
+      {...props}
     >
       {children}
     </MotionComponent>

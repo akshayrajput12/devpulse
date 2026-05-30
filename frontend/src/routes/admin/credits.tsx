@@ -64,7 +64,7 @@ function AdminCredits() {
       setUsers(userList as AdminUser[]);
 
       // 2. Fetch all recent reviews with user emails for credits audit feed
-      const { data: revList, error: revErr } = await supabase
+      const { data: revList, error: revErr } = await (supabase
         .from("reviews")
         .select(`
           id,
@@ -75,11 +75,11 @@ function AdminCredits() {
           user_id
         `)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(20) as any);
 
       if (!revErr && revList) {
         // Map user_id to email manually from user list
-        const mappedReviews = revList.map((rev) => {
+        const mappedReviews = (revList as any[]).map((rev: any) => {
           const matchedUser = (userList as AdminUser[]).find((u) => u.id === rev.user_id);
           return {
             id: rev.id,

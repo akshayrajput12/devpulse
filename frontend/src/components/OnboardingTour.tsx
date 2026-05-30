@@ -95,7 +95,7 @@ export function OnboardingTour({
   const getPopoverCoordinates = () => {
     if (!targetRect) return { top: 0, left: 0, arrowLeft: 150, show: false, placement: "bottom" as const };
     
-    let placement = "bottom" as const;
+    let placement: "bottom" | "top" = "bottom";
     let top = targetRect.bottom + 12;
     let left = targetRect.left + targetRect.width / 2 - 160;
     

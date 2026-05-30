@@ -77,11 +77,11 @@ function UserDetailModal({
       }
 
       // 2. Fetch full profile including github integration
-      const { data: prof, error: profErr } = await supabase
+      const { data: prof, error: profErr } = await (supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle();
+        .maybeSingle() as any);
 
       if (!profErr && prof) {
         setProfileData(prof);
@@ -118,7 +118,7 @@ function UserDetailModal({
     e.preventDefault();
     setSavingOverrides(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase
         .from("profiles")
         .update({
           display_name: editDisplayName.trim() || null,
@@ -129,8 +129,8 @@ function UserDetailModal({
           last_reset_at: editLastReset ? new Date(editLastReset).toISOString() : null,
           subscription_expires_at: editExpiresAt ? new Date(editExpiresAt).toISOString() : null,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+        } as any)
+        .eq("id", user.id) as any);
 
       if (error) throw error;
       toast.success("System overrides saved successfully!");

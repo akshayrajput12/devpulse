@@ -104,7 +104,7 @@ export const ContainerAnimated = React.forwardRef<
         whileInView={"visible"}
         viewport={{ once: true }}
         style={{ y, ...style }}
-        transition={{ ...SPRING_TRANSITION_CONFIG, ...transition }}
+        transition={{ ...SPRING_TRANSITION_CONFIG, ...transition } as any}
         {...props}
       />
     )
@@ -206,10 +206,10 @@ export const ContainerInset = React.forwardRef<
     const borderRadiusVal = useMotionTemplate`${roundedness}px`
 
     return (
-      <div
+      <motion.div
         ref={ref}
         className={cn("relative overflow-visible", className)}
-        style={style}
+        style={style as any}
         {...props}
       >
         {/* Clipped content wrapper */}
@@ -231,7 +231,7 @@ export const ContainerInset = React.forwardRef<
             borderRadius: borderRadiusVal,
           }}
         />
-      </div>
+      </motion.div>
     )
   }
 )
