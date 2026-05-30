@@ -23,6 +23,7 @@ import FlowArt, { FlowSection } from "@/components/ui/story-scroll";
 import { FeatureSectionCard } from "@/components/ui/feature-section-card";
 import { TimelineContent } from "@/components/ui/timeline-animation";
 import AboutSection1 from "@/components/ui/about-section-1";
+import { StaggerTestimonials } from "@/components/ui/stagger-testimonials";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -1355,6 +1356,26 @@ function BlogCarouselSection() {
   );
 }
 
+function StaggerTestimonialsSection() {
+  return (
+    <section className="py-24 bg-bg border-b border-border relative overflow-hidden" id="testimonials">
+      <div className="absolute inset-0 dp-grid-bg opacity-[0.03] pointer-events-none" />
+      <Container>
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <Eyebrow>WALL OF LOVE</Eyebrow>
+          <h2 className="tracking-tightest mt-3 font-medium text-foreground" style={{ fontSize: "clamp(28px, 3.6vw, 44px)", lineHeight: 1.08, letterSpacing: "-0.028em" }}>
+            Loved by high-performance teams.
+          </h2>
+          <p className="mt-4 text-xs text-text-muted leading-relaxed">
+            Real scanner ratings and accuracy logs fetched dynamically from our database registry.
+          </p>
+        </div>
+        <StaggerTestimonials />
+      </Container>
+    </section>
+  );
+}
+
 function Landing() {
   const schemaMarkup = {
     "@context": "https://schema.org",
@@ -1383,6 +1404,7 @@ function Landing() {
       <MailingShowcaseSection />
       <AboutSection1 />
       <ComparisonSection />
+      <StaggerTestimonialsSection />
       <Pricing />
       <BlogCarouselSection />
       <CTA />
