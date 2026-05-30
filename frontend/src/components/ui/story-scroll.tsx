@@ -131,11 +131,9 @@ export const FlowArt: React.FC<FlowArtProps> = ({
         if (!inner) return;
 
         if (i > 0) {
-          const isMobile = window.matchMedia('(max-width: 767px)').matches;
-          const initialRotation = isMobile ? 5 : 30;
-          gsap.set(inner, { rotation: initialRotation, transformOrigin: 'bottom left' });
+          gsap.set(inner, { yPercent: 100, rotation: 0 });
           const tween = gsap.to(inner, {
-            rotation: 0,
+            yPercent: 0,
             ease: 'none',
             scrollTrigger: {
               trigger: section,
