@@ -142,9 +142,61 @@ export async function updateAdminSettings(payload: {
     access_token: string;
     ai_provider?: "gemini" | "openai" | "both";
     parallel_engine_enabled?: boolean;
+    queue_concurrency?: number;
+    global_rpm_limit?: number;
   };
 }) {
   return fetchApi("/api/admin/update-settings", {
+    method: "POST",
+    body: JSON.stringify(payload.data),
+  });
+}
+
+export async function getAdminAiKeys(payload: {
+  data: {
+    access_token: string;
+  };
+}) {
+  return fetchApi("/api/admin/ai-keys", {
+    method: "POST",
+    body: JSON.stringify(payload.data),
+  });
+}
+
+export async function createAdminAiKey(payload: {
+  data: {
+    access_token: string;
+    provider: "gemini" | "openai";
+    api_key: string;
+    label?: string;
+  };
+}) {
+  return fetchApi("/api/admin/ai-keys/create", {
+    method: "POST",
+    body: JSON.stringify(payload.data),
+  });
+}
+
+export async function toggleAdminAiKey(payload: {
+  data: {
+    access_token: string;
+    id: string;
+    is_active: boolean;
+  };
+}) {
+  return fetchApi("/api/admin/ai-keys/toggle", {
+    method: "POST",
+    body: JSON.stringify(payload.data),
+  });
+}
+
+export async function deleteAdminAiKey(payload: {
+  data: {
+    access_token: string;
+    id: string;
+  };
+}) {
+  return fetchApi("/api/admin/ai-keys/delete", {
     method: "POST",
     body: JSON.stringify(payload.data),
   });

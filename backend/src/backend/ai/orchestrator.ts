@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import { getRequiredEnv, getRuntimeEnv } from "../config/env.server.js";
+import { getRequiredEnv, hasUsableServiceRoleKey } from "../config/env.server.js";
 import { logger } from "../logging/logger.server.js";
+import { hasGeminiKeyAvailable } from "./gemini/models.js";
+import { hasOpenAIKeyAvailable } from "./openai/models.js";
 
 export { selectApiFiles } from "./gemini/api-analyser.js";
 
@@ -44,7 +46,9 @@ import { callPrReviewAI as callPrReviewOpenAI } from "./openai/pr-review.js";
 
 function getSupabaseClient() {
   const url = getRequiredEnv("SUPABASE_URL");
-  const key = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY") || getRequiredEnv("SUPABASE_PUBLISHABLE_KEY");
+  const key = hasUsableServiceRoleKey()
+    ? getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY")
+    : getRequiredEnv("SUPABASE_PUBLISHABLE_KEY");
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -70,9 +74,9 @@ export async function getActiveAIProvider(): Promise<"gemini" | "openai" | "both
     }
 
     const val = data.value as "gemini" | "openai" | "both";
-    cachedProvider = val;
-    cacheExpiry = now + 10_000; // cache for 10 seconds
-    return val;
+    cachedProvider = val === "gemini" || val === "openai" || val === "both" ? val : "both";
+    cacheExpiry = now + 10_000;
+    return cachedProvider;
   } catch (err) {
     logger.warn("orchestrator.db_provider_read_failed", { error: String(err) });
     return "both";
@@ -97,37 +101,25 @@ export async function isParallelEngineEnabled(): Promise<boolean> {
       .maybeSingle();
 
     if (error || !data) {
-      return true; // default to true if missing
+      return true;
     }
 
     const val = data.value === "true";
     cachedParallelEnabled = val;
-    parallelCacheExpiry = now + 10_000; // cache for 10 seconds
+    parallelCacheExpiry = now + 10_000;
     return val;
   } catch (err) {
     logger.warn("orchestrator.db_parallel_enabled_read_failed", { error: String(err) });
-    return true; // default to true
+    return true;
   }
 }
 
-/** Check if OpenAI keys/configs are fully present. If not, auto-fallback to Gemini even if OpenAI is requested. */
 function hasOpenAICreds(): boolean {
-  try {
-    const key = getRuntimeEnv("OPENAI_API_KEY");
-    return !!key && key.trim().length > 0;
-  } catch {
-    return false;
-  }
+  return hasOpenAIKeyAvailable();
 }
 
-/** Check if Gemini keys are present. */
 function hasGeminiCreds(): boolean {
-  try {
-    const key = getRuntimeEnv("GEMINI_API_KEY");
-    return !!key && key.trim().length > 0;
-  } catch {
-    return false;
-  }
+  return hasGeminiKeyAvailable();
 }
 
 export function buildTreeString(items: Array<{ path: string; type: string }>, maxItems = 300) {
@@ -158,75 +150,97 @@ export function buildTreeString(items: Array<{ path: string; type: string }>, ma
   return lines.join("\n");
 }
 
+/**
+ * Universal Dual-Engine Failover Router.
+ * Determines provider order from system_settings + available credentials,
+ * executes primary provider, and seamlessly fails over to the secondary provider
+ * on any outage, rate-limit exhaustion, timeout, or schema error.
+ */
+async function executeWithProviderFailover<T>(params: {
+  scope: "folder_analysis" | "api_analysis" | "codebase_audit" | "pr_review";
+  requestId: string;
+  plan?: string;
+  meta?: Record<string, unknown>;
+  runGemini: () => Promise<T>;
+  runOpenAI: () => Promise<T>;
+}): Promise<T> {
+  const provider = await getActiveAIProvider();
+  const hasGem = hasGeminiCreds();
+  const hasOai = hasOpenAICreds();
+
+  logger.info(`orchestrator.${params.scope}.start`, {
+    requestId: params.requestId,
+    provider,
+    plan: params.plan ?? "free",
+    hasGeminiCreds: hasGem,
+    hasOpenAICreds: hasOai,
+    ...params.meta,
+  });
+
+  if (!hasGem && !hasOai) {
+    throw new Error("No AI provider API keys are configured (GEMINI_API_KEY / OPENAI_API_KEY).");
+  }
+
+  // Build ordered execution chain based on admin preference & credential availability
+  const chain: Array<{ name: "gemini" | "openai"; run: () => Promise<T> }> = [];
+  if (provider === "openai") {
+    if (hasOai) chain.push({ name: "openai", run: params.runOpenAI });
+    if (hasGem) chain.push({ name: "gemini", run: params.runGemini });
+  } else {
+    // "both" or "gemini": prefer Gemini first, auto-failover to OpenAI
+    if (hasGem) chain.push({ name: "gemini", run: params.runGemini });
+    if (hasOai) chain.push({ name: "openai", run: params.runOpenAI });
+  }
+
+  let lastError: unknown = null;
+  for (let i = 0; i < chain.length; i += 1) {
+    const candidate = chain[i];
+    const startedAt = Date.now();
+    try {
+      const result = await candidate.run();
+      if (i > 0) {
+        logger.info(`orchestrator.${params.scope}.failover_succeeded`, {
+          requestId: params.requestId,
+          provider: candidate.name,
+          durationMs: Date.now() - startedAt,
+        });
+      }
+      return result;
+    } catch (err) {
+      lastError = err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const hasNext = i + 1 < chain.length;
+      logger.warn(`orchestrator.${params.scope}.provider_failed`, {
+        requestId: params.requestId,
+        provider: candidate.name,
+        willFailover: hasNext,
+        nextProvider: hasNext ? chain[i + 1].name : null,
+        durationMs: Date.now() - startedAt,
+        error: errMsg.slice(0, 400),
+      });
+    }
+  }
+
+  logger.error(`orchestrator.${params.scope}.all_providers_failed`, {
+    requestId: params.requestId,
+    error: lastError instanceof Error ? lastError.message : String(lastError),
+  });
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
 export async function callFolderAnalysisAI(params: {
   requestId: string;
   structure: string;
   repoName?: string;
   plan?: string;
 }) {
-  const isPro = params.plan === "pro";
-  if (!isPro) {
-    logger.info("orchestrator.folder_analysis.free_plan_routing.gemini_only", { requestId: params.requestId });
-    try {
-      return await callFolderAnalysisGemini(params);
-    } catch (err) {
-      logger.error("orchestrator.folder_analysis.free_plan_routing.gemini_failed", { requestId: params.requestId, error: String(err) });
-      throw new Error("Gemini rate limit reached on Free plan. Please upgrade to Developer Pro for resilient auto-failover, or try again in 1 minute.");
-    }
-  }
-
-  const provider = await getActiveAIProvider();
-  logger.info("orchestrator.folder_analysis.start", { requestId: params.requestId, provider });
-
-  if (provider === "openai") {
-    if (hasOpenAICreds()) {
-      try {
-        return await callFolderAnalysisOpenAI(params);
-      } catch (err) {
-        logger.warn("orchestrator.folder_analysis.openai_failed_fallback_gemini", { requestId: params.requestId, error: String(err) });
-      }
-    } else {
-      logger.warn("orchestrator.folder_analysis.openai_creds_missing_fallback_gemini", { requestId: params.requestId });
-    }
-    return await callFolderAnalysisGemini(params);
-  }
-
-  if (provider === "gemini") {
-    if (hasGeminiCreds()) {
-      try {
-        return await callFolderAnalysisGemini(params);
-      } catch (err) {
-        logger.warn("orchestrator.folder_analysis.gemini_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-        if (hasOpenAICreds()) {
-          return await callFolderAnalysisOpenAI(params);
-        }
-      }
-    }
-    return await callFolderAnalysisGemini(params);
-  }
-
-  // Dual provider (both) - always try Gemini first, fallback to OpenAI
-  if (hasGeminiCreds()) {
-    try {
-      return await callFolderAnalysisGemini(params);
-    } catch (err) {
-      logger.warn("orchestrator.folder_analysis.gemini_primary_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-      if (hasOpenAICreds()) {
-        try {
-          return await callFolderAnalysisOpenAI(params);
-        } catch (opErr) {
-          logger.error("orchestrator.folder_analysis.both_providers_failed", { requestId: params.requestId, error: String(opErr) });
-        }
-      }
-    }
-  } else if (hasOpenAICreds()) {
-    try {
-      return await callFolderAnalysisOpenAI(params);
-    } catch (opErr) {
-      logger.error("orchestrator.folder_analysis.openai_only_failed", { requestId: params.requestId, error: String(opErr) });
-    }
-  }
-  return await callFolderAnalysisGemini(params);
+  return executeWithProviderFailover({
+    scope: "folder_analysis",
+    requestId: params.requestId,
+    plan: params.plan,
+    runGemini: () => callFolderAnalysisGemini(params),
+    runOpenAI: () => callFolderAnalysisOpenAI(params),
+  });
 }
 
 export async function callApiAnalysisAI(params: {
@@ -236,83 +250,19 @@ export async function callApiAnalysisAI(params: {
   filesContent: Record<string, string>;
   plan?: string;
 }) {
-  const isPro = params.plan === "pro";
-  if (!isPro) {
-    logger.info("orchestrator.api_analysis.free_plan_routing.gemini_only", { requestId: params.requestId });
-    try {
-      return await callApiAnalysisGemini(params);
-    } catch (err) {
-      logger.error("orchestrator.api_analysis.free_plan_routing.gemini_failed", { requestId: params.requestId, error: String(err) });
-      throw new Error("Gemini rate limit reached on Free plan. Please upgrade to Developer Pro for resilient auto-failover, or try again in 1 minute.");
-    }
-  }
-
-  const provider = await getActiveAIProvider();
-  
-  // Calculate total characters in codebase to check context size
   const totalLength = Object.values(params.filesContent).reduce((acc, text) => acc + (text?.length ?? 0), 0);
-  const isLargeCodebase = totalLength > 200_000;
-
-  logger.info("orchestrator.api_analysis.start", {
+  return executeWithProviderFailover({
+    scope: "api_analysis",
     requestId: params.requestId,
-    provider,
-    totalFiles: Object.keys(params.filesContent).length,
-    totalLength,
-    isLargeCodebase,
+    plan: params.plan,
+    meta: {
+      totalFiles: Object.keys(params.filesContent).length,
+      totalLength,
+      isLargeCodebase: totalLength > 200_000,
+    },
+    runGemini: () => callApiAnalysisGemini(params),
+    runOpenAI: () => callApiAnalysisOpenAI(params),
   });
-
-  if (provider === "gemini") {
-    if (hasGeminiCreds()) {
-      try {
-        return await callApiAnalysisGemini(params);
-      } catch (err) {
-        logger.warn("orchestrator.api_analysis.gemini_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-        if (hasOpenAICreds()) {
-          return await callApiAnalysisOpenAI(params);
-        }
-      }
-    }
-    return await callApiAnalysisGemini(params);
-  }
-
-  if (provider === "openai") {
-    if (hasOpenAICreds()) {
-      try {
-        return await callApiAnalysisOpenAI(params);
-      } catch (err) {
-        logger.warn("orchestrator.api_analysis.openai_failed_fallback_gemini", { requestId: params.requestId, error: String(err) });
-      }
-    } else {
-      logger.warn("orchestrator.api_analysis.openai_creds_missing_fallback_gemini", { requestId: params.requestId });
-    }
-    return await callApiAnalysisGemini(params);
-  }
-
-  // Dual provider (both) - try Gemini first, fallback to OpenAI
-  if (hasGeminiCreds()) {
-    try {
-      if (isLargeCodebase) {
-        logger.info("orchestrator.api_analysis.large_codebase_dual_gemini_primary", { requestId: params.requestId, totalLength });
-      }
-      return await callApiAnalysisGemini(params);
-    } catch (err) {
-      logger.warn("orchestrator.api_analysis.gemini_primary_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-      if (hasOpenAICreds()) {
-        try {
-          return await callApiAnalysisOpenAI(params);
-        } catch (opErr) {
-          logger.error("orchestrator.api_analysis.both_providers_failed", { requestId: params.requestId, error: String(opErr) });
-        }
-      }
-    }
-  } else if (hasOpenAICreds()) {
-    try {
-      return await callApiAnalysisOpenAI(params);
-    } catch (opErr) {
-      logger.error("orchestrator.api_analysis.openai_only_failed", { requestId: params.requestId, error: String(opErr) });
-    }
-  }
-  return await callApiAnalysisGemini(params);
 }
 
 export async function callCodebaseAuditAI(params: {
@@ -322,81 +272,19 @@ export async function callCodebaseAuditAI(params: {
   filesContent: Record<string, string>;
   plan?: string;
 }) {
-  const isPro = params.plan === "pro";
-  if (!isPro) {
-    logger.info("orchestrator.codebase_audit.free_plan_routing.gemini_only", { requestId: params.requestId });
-    try {
-      return await callCodebaseAuditGemini(params);
-    } catch (err) {
-      logger.error("orchestrator.codebase_audit.free_plan_routing.gemini_failed", { requestId: params.requestId, error: String(err) });
-      throw new Error("Gemini rate limit reached on Free plan. Please upgrade to Developer Pro for resilient auto-failover, or try again in 1 minute.");
-    }
-  }
-
-  const provider = await getActiveAIProvider();
   const totalLength = Object.values(params.filesContent).reduce((acc, text) => acc + (text?.length ?? 0), 0);
-  const isLargeCodebase = totalLength > 200_000;
-
-  logger.info("orchestrator.codebase_audit.start", {
+  return executeWithProviderFailover({
+    scope: "codebase_audit",
     requestId: params.requestId,
-    provider,
-    totalFiles: Object.keys(params.filesContent).length,
-    totalLength,
-    isLargeCodebase,
+    plan: params.plan,
+    meta: {
+      totalFiles: Object.keys(params.filesContent).length,
+      totalLength,
+      isLargeCodebase: totalLength > 200_000,
+    },
+    runGemini: () => callCodebaseAuditGemini(params),
+    runOpenAI: () => callCodebaseAuditOpenAI(params),
   });
-
-  if (provider === "gemini") {
-    if (hasGeminiCreds()) {
-      try {
-        return await callCodebaseAuditGemini(params);
-      } catch (err) {
-        logger.warn("orchestrator.codebase_audit.gemini_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-        if (hasOpenAICreds()) {
-          return await callCodebaseAuditOpenAI(params);
-        }
-      }
-    }
-    return await callCodebaseAuditGemini(params);
-  }
-
-  if (provider === "openai") {
-    if (hasOpenAICreds()) {
-      try {
-        return await callCodebaseAuditOpenAI(params);
-      } catch (err) {
-        logger.warn("orchestrator.codebase_audit.openai_failed_fallback_gemini", { requestId: params.requestId, error: String(err) });
-      }
-    } else {
-      logger.warn("orchestrator.codebase_audit.openai_creds_missing_fallback_gemini", { requestId: params.requestId });
-    }
-    return await callCodebaseAuditGemini(params);
-  }
-
-  // Dual provider (both) - try Gemini first, fallback to OpenAI
-  if (hasGeminiCreds()) {
-    try {
-      if (isLargeCodebase) {
-        logger.info("orchestrator.codebase_audit.large_codebase_dual_gemini_primary", { requestId: params.requestId, totalLength });
-      }
-      return await callCodebaseAuditGemini(params);
-    } catch (err) {
-      logger.warn("orchestrator.codebase_audit.gemini_primary_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-      if (hasOpenAICreds()) {
-        try {
-          return await callCodebaseAuditOpenAI(params);
-        } catch (opErr) {
-          logger.error("orchestrator.codebase_audit.both_providers_failed", { requestId: params.requestId, error: String(opErr) });
-        }
-      }
-    }
-  } else if (hasOpenAICreds()) {
-    try {
-      return await callCodebaseAuditOpenAI(params);
-    } catch (opErr) {
-      logger.error("orchestrator.codebase_audit.openai_only_failed", { requestId: params.requestId, error: String(opErr) });
-    }
-  }
-  return await callCodebaseAuditGemini(params);
 }
 
 export async function callPrReviewAI(params: {
@@ -411,78 +299,17 @@ export async function callPrReviewAI(params: {
   token: string | null;
   reviewType?: "pr" | "codebase" | "api" | "folder";
 }) {
-  const isPro = params.plan === "pro";
-  if (!isPro) {
-    logger.info("orchestrator.pr_review.free_plan_routing.gemini_only", { requestId: params.requestId });
-    try {
-      return await callPrReviewGemini(params);
-    } catch (err) {
-      logger.error("orchestrator.pr_review.free_plan_routing.gemini_failed", { requestId: params.requestId, error: String(err) });
-      throw new Error("Gemini rate limit reached on Free plan. Please upgrade to Developer Pro for resilient auto-failover, or try again in 1 minute.");
-    }
-  }
-
-  const provider = await getActiveAIProvider();
   const diffLength = params.diff?.length ?? 0;
-  const isLargeDiff = diffLength > 200_000;
-
-  logger.info("orchestrator.pr_review.start", {
+  return executeWithProviderFailover({
+    scope: "pr_review",
     requestId: params.requestId,
-    provider,
-    diffLength,
-    isLargeDiff,
+    plan: params.plan,
+    meta: {
+      diffLength,
+      isLargeDiff: diffLength > 200_000,
+      reviewType: params.reviewType ?? "pr",
+    },
+    runGemini: () => callPrReviewGemini(params),
+    runOpenAI: () => callPrReviewOpenAI(params),
   });
-
-  if (provider === "gemini") {
-    if (hasGeminiCreds()) {
-      try {
-        return await callPrReviewGemini(params);
-      } catch (err) {
-        logger.warn("orchestrator.pr_review.gemini_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-        if (hasOpenAICreds()) {
-          return await callPrReviewOpenAI(params);
-        }
-      }
-    }
-    return await callPrReviewGemini(params);
-  }
-
-  if (provider === "openai") {
-    if (hasOpenAICreds()) {
-      try {
-        return await callPrReviewOpenAI(params);
-      } catch (err) {
-        logger.warn("orchestrator.pr_review.openai_failed_fallback_gemini", { requestId: params.requestId, error: String(err) });
-      }
-    } else {
-      logger.warn("orchestrator.pr_review.openai_creds_missing_fallback_gemini", { requestId: params.requestId });
-    }
-    return await callPrReviewGemini(params);
-  }
-
-  // Dual provider (both) - try Gemini first, fallback to OpenAI
-  if (hasGeminiCreds()) {
-    try {
-      if (isLargeDiff) {
-        logger.info("orchestrator.pr_review.large_diff_dual_gemini_primary", { requestId: params.requestId, diffLength });
-      }
-      return await callPrReviewGemini(params);
-    } catch (err) {
-      logger.warn("orchestrator.pr_review.gemini_primary_failed_fallback_openai", { requestId: params.requestId, error: String(err) });
-      if (hasOpenAICreds()) {
-        try {
-          return await callPrReviewOpenAI(params);
-        } catch (opErr) {
-          logger.error("orchestrator.pr_review.both_providers_failed", { requestId: params.requestId, error: String(opErr) });
-        }
-      }
-    }
-  } else if (hasOpenAICreds()) {
-    try {
-      return await callPrReviewOpenAI(params);
-    } catch (opErr) {
-      logger.error("orchestrator.pr_review.openai_only_failed", { requestId: params.requestId, error: String(opErr) });
-    }
-  }
-  return await callPrReviewGemini(params);
 }

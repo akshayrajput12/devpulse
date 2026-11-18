@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getAdminMetrics, getAdminSettings, updateAdminSettings } from "./-admin.functions";
+import {
+  getAdminMetrics,
+  getAdminSettings,
+  updateAdminSettings,
+  getAdminAiKeys,
+  createAdminAiKey,
+  toggleAdminAiKey,
+  deleteAdminAiKey,
+} from "./-admin.functions";
 import { DevPulseLoader } from "@/components/DevPulseLoader";
 import {
   AnimatedIconsStyles,
@@ -15,7 +23,6 @@ import {
 } from "@/components/AnimatedIcons";
 import { RefreshCw, Sliders, Plus, Trash2, KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/settings")({
   component: AdminSettings,
@@ -51,33 +58,32 @@ function AdminSettings() {
   const fetchSettingsAndMetrics = async () => {
     if (!session?.access_token) return;
     try {
-      const [metricsRes, settingsRes, dbSettingsRes, dbKeysRes] = await Promise.all([
+      const [metricsRes, settingsRes, keysRes] = await Promise.all([
         getAdminMetrics({ data: { access_token: session.access_token } }),
         getAdminSettings({ data: { access_token: session.access_token } }).catch((err) => {
           console.error("Failed to load AI settings:", err);
-          return { ai_provider: "both", parallel_engine_enabled: true };
+          return { ai_provider: "both", parallel_engine_enabled: true, queue_concurrency: 4, global_rpm_limit: 100 };
         }),
-        (supabase.from("system_settings" as any) as any).select("*"),
-        (supabase.from("system_ai_keys" as any) as any).select("*").order("created_at", { ascending: false }),
+        getAdminAiKeys({ data: { access_token: session.access_token } }).catch((err) => {
+          console.error("Failed to load AI keys:", err);
+          return [];
+        }),
       ]);
       setMetrics(metricsRes.metrics);
-      if (settingsRes && settingsRes.ai_provider) {
+      if (settingsRes?.ai_provider) {
         setAiProvider(settingsRes.ai_provider as "gemini" | "openai" | "both");
       }
-      if (settingsRes && settingsRes.parallel_engine_enabled !== undefined) {
+      if (settingsRes?.parallel_engine_enabled !== undefined) {
         setParallelEnabled(settingsRes.parallel_engine_enabled);
       }
-      // Populate dynamic DB configurations
-      if (dbSettingsRes.data) {
-        const settingsList = dbSettingsRes.data as any[];
-        const concurrencyVal = settingsList.find(x => x.key === "queue_concurrency")?.value;
-        const rpmVal = settingsList.find(x => x.key === "global_rpm_limit")?.value;
-        if (concurrencyVal) setQueueConcurrency(parseInt(concurrencyVal, 10) || 4);
-        if (rpmVal) setGlobalRpmLimit(parseInt(rpmVal, 10) || 100);
+      if (settingsRes?.queue_concurrency) {
+        setQueueConcurrency(Number(settingsRes.queue_concurrency) || 4);
       }
-      // Populate active rotating key pool
-      if (dbKeysRes.data) {
-        setApiKeys(dbKeysRes.data);
+      if (settingsRes?.global_rpm_limit) {
+        setGlobalRpmLimit(Number(settingsRes.global_rpm_limit) || 100);
+      }
+      if (Array.isArray(keysRes)) {
+        setApiKeys(keysRes);
       }
     } catch (e: any) {
       console.error("Failed to load settings data:", e);
@@ -132,15 +138,16 @@ function AdminSettings() {
   };
 
   const handleSaveQueueConfig = async () => {
+    if (!session?.access_token) return;
     setSavingQueueConfig(true);
     try {
-      const { error: err1 } = await (supabase.from("system_settings" as any) as any)
-        .upsert({ key: "queue_concurrency", value: String(queueConcurrency), updated_at: new Date().toISOString() } as any);
-        
-      const { error: err2 } = await (supabase.from("system_settings" as any) as any)
-        .upsert({ key: "global_rpm_limit", value: String(globalRpmLimit), updated_at: new Date().toISOString() } as any);
-
-      if (err1 || err2) throw new Error(err1?.message || err2?.message || "Failed to save configurations");
+      await updateAdminSettings({
+        data: {
+          access_token: session.access_token,
+          queue_concurrency: queueConcurrency,
+          global_rpm_limit: globalRpmLimit,
+        },
+      });
       toast.success("High-capacity queue configurations saved successfully!");
     } catch (e: any) {
       toast.error(e.message || "Failed to save queue settings");
@@ -150,12 +157,11 @@ function AdminSettings() {
   };
 
   const handleToggleKey = async (id: string, is_active: boolean) => {
+    if (!session?.access_token) return;
     try {
-      const { error } = await (supabase.from("system_ai_keys" as any) as any)
-        .update({ is_active, updated_at: new Date().toISOString() })
-        .eq("id", id);
-
-      if (error) throw error;
+      await toggleAdminAiKey({
+        data: { access_token: session.access_token, id, is_active },
+      });
       setApiKeys(prev => prev.map(k => k.id === id ? { ...k, is_active } : k));
       toast.success(`Key status updated to ${is_active ? "ACTIVE" : "INACTIVE"}`);
     } catch (e: any) {
@@ -164,13 +170,12 @@ function AdminSettings() {
   };
 
   const handleDeleteKey = async (id: string) => {
+    if (!session?.access_token) return;
     if (!confirm("Are you sure you want to delete this API key from the rotation pool?")) return;
     try {
-      const { error } = await (supabase.from("system_ai_keys" as any) as any)
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      await deleteAdminAiKey({
+        data: { access_token: session.access_token, id },
+      });
       setApiKeys(prev => prev.filter(k => k.id !== id));
       toast.success("API key deleted from pool");
     } catch (e: any) {
@@ -180,25 +185,21 @@ function AdminSettings() {
 
   const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.access_token) return;
     if (!newKeyContent.trim()) {
       toast.error("Please provide API Key contents");
       return;
     }
     setSavingNewKey(true);
     try {
-      const label = newKeyLabel.trim() || `${newKeyProvider.toUpperCase()} Key - ${new Date().toLocaleDateString()}`;
-      const { data, error } = await (supabase.from("system_ai_keys" as any) as any)
-        .insert({
+      const data = await createAdminAiKey({
+        data: {
+          access_token: session.access_token,
           provider: newKeyProvider,
-          api_key_encrypted: newKeyContent.trim(),
-          label,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+          api_key: newKeyContent.trim(),
+          label: newKeyLabel.trim() || undefined,
+        },
+      });
       setApiKeys(prev => [data, ...prev]);
       setNewKeyContent("");
       setNewKeyLabel("");
@@ -540,7 +541,9 @@ function AdminSettings() {
                         </span>
                         <div>
                           <div className="text-xs font-semibold text-foreground">{k.label}</div>
-                          <div className="font-mono text-[9px] text-text-muted mt-0.5">Key: ••••••••••••••••{k.api_key_encrypted.slice(-4)}</div>
+                          <div className="font-mono text-[9px] text-text-muted mt-0.5">
+                            Key: ••••••••••••••••{k.key_last4 || (k.api_key_encrypted ? k.api_key_encrypted.slice(-4) : "****")}
+                          </div>
                         </div>
                       </div>
 

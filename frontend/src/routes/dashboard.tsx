@@ -233,7 +233,7 @@ function Dashboard() {
   }
 
   const avgHealthScore = useMemo(() => {
-    const scored = reviews.filter(r => r.health_score != null);
+    const scored = reviews.filter(r => r.status === "complete" && r.health_score != null);
     if (!scored.length) return null;
     const sum = scored.reduce((acc, r) => acc + (r.health_score ?? 0), 0);
     return Math.round(sum / scored.length);
@@ -306,8 +306,16 @@ function Dashboard() {
           .in("review_id", list.map(r => r.id));
         const map: typeof findingsBySev = {};
         for (const row of (f as Finding[] | null) ?? []) {
-          const sevK = (row.severity ?? "low").toLowerCase();
-          const k = sevK in SEV_ORDER ? sevK : "low";
+          const rawSev = (row.severity ?? "low").toLowerCase();
+          if (rawSev === "ok") continue;
+          const k =
+            rawSev === "crit" || rawSev === "critical"
+              ? "critical"
+              : rawSev === "high"
+                ? "high"
+                : rawSev === "med" || rawSev === "medium"
+                  ? "medium"
+                  : "low";
           const cur = map[row.review_id] ?? { critical: 0, high: 0, medium: 0, low: 0, top: "low" };
           (cur as any)[k] = ((cur as any)[k] ?? 0) + 1;
           if (SEV_ORDER[k] > SEV_ORDER[cur.top]) cur.top = k;
@@ -340,13 +348,19 @@ function Dashboard() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return reviews.filter(r => {
-      if (status !== "all" && r.status !== status) return false;
+      if (status !== "all") {
+        if (status === "processing") {
+          if (r.status !== "processing" && r.status !== "pending") return false;
+        } else if (r.status !== status) {
+          return false;
+        }
+      }
       if (sev !== "all") {
         const top = findingsBySev[r.id]?.top;
         if (!top || top !== sev) return false;
       }
       if (!term) return true;
-      const hay = `${r.pr_title ?? ""} ${r.repo_owner ?? ""} ${r.repo_name ?? ""} #${r.pr_number ?? ""} ${r.pr_url}`.toLowerCase();
+      const hay = `${r.pr_title ?? ""} ${r.repo_owner ?? ""} ${r.repo_name ?? ""} ${r.pr_number ? `#${r.pr_number}` : ""} ${r.pr_url}`.toLowerCase();
       return hay.includes(term);
     });
   }, [reviews, q, status, sev, findingsBySev]);
@@ -555,11 +569,21 @@ function Dashboard() {
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-sm font-medium">{r.pr_title ?? r.pr_url}</div>
                               <div className="font-mono text-xs text-text-faint">
-                                {r.repo_owner ? `${r.repo_owner}/${r.repo_name}#${r.pr_number}` : r.pr_url}
+                                {r.repo_owner
+                                  ? r.pr_number
+                                    ? `${r.repo_owner}/${r.repo_name}#${r.pr_number}`
+                                    : `${r.repo_owner}/${r.repo_name} · ${
+                                        r.review_type === "api_analysis" || r.pr_url.includes("type=api")
+                                          ? "API Audit"
+                                          : r.review_type === "folder_analysis"
+                                            ? "Folder Audit"
+                                            : "Codebase Audit"
+                                      }`
+                                  : r.pr_url}
                                 <span className="ml-2 text-text-faint/60">· {timeAgo(r.created_at, liveTick)}</span>
                               </div>
                             </div>
-                            {fs && (
+                            {fs && r.status === "complete" && (
                               <div className="hidden items-center gap-1.5 font-mono text-[11px] md:flex">
                                 {fs.critical > 0 && <Dot c="bg-sev-crit" n={fs.critical} />}
                                 {fs.high > 0 && <Dot c="bg-sev-high" n={fs.high} />}
@@ -567,11 +591,24 @@ function Dashboard() {
                                 {fs.low > 0 && <Dot c="bg-sev-low" n={fs.low} />}
                               </div>
                             )}
-                            {r.health_score != null && (
+                            {r.status === "complete" && r.health_score != null ? (
                               <div className="font-mono text-sm tabular-nums">
-                                <span className="text-text-muted">score </span>{r.health_score}
+                                <span className="text-text-muted">score </span>
+                                <span
+                                  className={
+                                    r.health_score >= 80
+                                      ? "text-sev-ok font-semibold"
+                                      : r.health_score >= 60
+                                        ? "text-sev-med font-semibold"
+                                        : "text-sev-crit font-semibold"
+                                  }
+                                >
+                                  {r.health_score}
+                                </span>
                               </div>
-                            )}
+                            ) : r.status === "failed" ? (
+                              <span className="font-mono text-[11px] text-sev-crit">failed · retry</span>
+                            ) : null}
                             <ArrowRight className="h-4 w-4 text-text-faint group-hover:translate-x-0.5 transition-transform" />
                           </Link>
                           <div className="pr-5 py-4 flex items-center z-10">

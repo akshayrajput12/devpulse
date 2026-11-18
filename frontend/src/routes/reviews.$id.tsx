@@ -398,27 +398,15 @@ function ReviewDetail() {
         timers.push(setTimeout(() => advance(2), 4000));
       }
 
-      // Fire-and-forget: the server fn uses waitUntil so it returns immediately.
-      // Completion is handled by the Supabase watcher effect below.
+      // Dispatch review job via unified API client (handles both DB queue & in-process fallback).
       setIsProcessing(true);
-      const backendUrl = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, "");
-      const kick = backendUrl
-        ? fetch(`${backendUrl}/api/reviews/process`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${currentSession.access_token}`,
-            },
-            body: JSON.stringify({ review_id: id }),
-          }).then(async res => {
-            const payload = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(payload.error || `Backend error ${res.status}`);
-          })
-        : processReviewFn({ data: { review_id: id, access_token: currentSession.access_token } })
-            .then(() => {});
+      const kick = processReviewFn({
+        data: { review_id: id, access_token: currentSession.access_token },
+      }).then(() => {});
 
       kick.catch((err: any) => {
         if (!alive) return;
+        timers.forEach(clearTimeout);
         const msg = friendlyAiError(err?.message || "Failed to start review");
         setIsProcessing(false);
         setLogSteps(prev => prev.map(s => ({
@@ -427,6 +415,7 @@ function ReviewDetail() {
           finishedAt: s.status === "active" ? Date.now() : s.finishedAt,
           detail: s.status === "active" ? msg : s.detail,
         })));
+        setReview((prev: any) => prev ? { ...prev, status: "failed", error_message: msg, health_score: null } : prev);
         toast.error(`Review failed: ${msg}`);
       });
     }
@@ -437,6 +426,28 @@ function ReviewDetail() {
       timers.forEach(clearTimeout);
     };
   }, [startedId, loading, user?.id, id]);
+
+  // Safety-net poller while pending/processing in case WebSocket realtime drops
+  useEffect(() => {
+    if (!review || (review.status !== "pending" && review.status !== "processing")) return;
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      const { data: r } = await supabase.from("reviews").select("*").eq("id", id).maybeSingle();
+      if (cancelled || !r) return;
+      setReview(r);
+      if (r.status === "complete") {
+        const { data: f } = await supabase.from("findings").select("*").eq("review_id", id).order("severity");
+        if (!cancelled && f) {
+          setFindings(f);
+          if (f[0]) setActive(prev => prev || f[0].id);
+        }
+      }
+    }, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [review?.status, id]);
 
   // Completion watcher — marks log steps done when Supabase confirms review finished.
   useEffect(() => {
@@ -1353,7 +1364,26 @@ function ReviewDetail() {
                   </div>
                 )}
               </div>
-              <HealthScore value={review.health_score} size={110} />
+              {isComplete && review.health_score != null ? (
+                <HealthScore value={review.health_score} size={110} />
+              ) : (
+                <div className="grid h-[110px] w-[110px] shrink-0 place-items-center rounded-full border-4 border-border bg-bg-code text-center">
+                  <div>
+                    <div
+                      className={`font-mono text-sm font-semibold uppercase ${
+                        review.status === "failed"
+                          ? "text-sev-crit"
+                          : "text-sev-med animate-pulse"
+                      }`}
+                    >
+                      {review.status === "failed" ? "FAILED" : review.status === "processing" ? "RUNNING" : "QUEUED"}
+                    </div>
+                    <div className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-text-faint">
+                      {review.status === "failed" ? "no score" : "scoring…"}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Tab bar */}

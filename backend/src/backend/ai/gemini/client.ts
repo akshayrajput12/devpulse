@@ -1,4 +1,5 @@
 import { logger } from "../../logging/logger.server.js";
+import { parseLenientJson } from "../chunking.js";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -110,13 +111,7 @@ export function extractText(json: any): string | null {
 }
 
 export function parseJsonResponse<T>(text: string): T {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Gemini returned a non-JSON response");
-    return JSON.parse(match[0]);
-  }
+  return parseLenientJson<T>(text, "Gemini");
 }
 
 export async function readGeminiText(res: Response): Promise<GeminiTextResponse> {

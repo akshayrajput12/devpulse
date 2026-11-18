@@ -1,18 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { callCodebaseAuditAI, callApiAnalysisAI, selectApiFiles, callPrReviewAI } from "../ai/orchestrator.js";
+import { computeDeterministicHealthScore, normalizeAndDedupeFindings } from "../ai/chunking.js";
 import { fetchRepoFiles, fetchRepoTree, selectAuditFiles } from "../github/repository.server.js";
 import { createRequestId, logger } from "../logging/logger.server.js";
 import { fetchPr, parsePrUrl } from "../github/pull-request.server.js";
-
-const PLAN_LIMITS: Record<string, number> = { free: 10, pro: 150 };
-
-import { getRequiredEnv, getRuntimeEnv } from "../config/env.server.js";
+import { getRequiredEnv, getRuntimeEnv, hasUsableServiceRoleKey } from "../config/env.server.js";
+import { requireAuthUser } from "../http/supabase-auth.server.js";
 
 function adminClient() {
   const url = getRequiredEnv("SUPABASE_URL");
-  const anonKey = getRequiredEnv("SUPABASE_PUBLISHABLE_KEY");
-  const serviceKey = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const key = serviceKey || anonKey;
+  const key = hasUsableServiceRoleKey()
+    ? getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY")
+    : getRequiredEnv("SUPABASE_PUBLISHABLE_KEY");
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -39,18 +38,18 @@ async function getGithubToken(sb: any, userId: string, userMeta?: any) {
 }
 
 function normalizeFindings(reviewId: string, findings: any[]) {
-  return (findings || []).slice(0, 15).map((finding: any) => ({
+  return normalizeAndDedupeFindings(findings || [], 20).map(finding => ({
     review_id: reviewId,
     severity: finding.severity,
     category: finding.category,
     title: finding.title,
     description: finding.description,
     file_path: finding.file_path,
-    line_start: finding.line_start ?? null,
-    line_end: finding.line_end ?? null,
-    bad_code: finding.bad_code ?? "",
-    suggested_fix: finding.suggested_fix ?? "",
-    confidence: finding.confidence ?? 80,
+    line_start: finding.line_start,
+    line_end: finding.line_end,
+    bad_code: finding.bad_code,
+    suggested_fix: finding.suggested_fix,
+    confidence: finding.confidence,
   }));
 }
 
@@ -68,10 +67,12 @@ async function saveResult(params: {
   const findings = normalizeFindings(params.reviewId, params.result.findings || []);
   if (findings.length) await params.sb.from("findings").insert(findings);
 
+  const safeHealthScore = computeDeterministicHealthScore(findings, params.result.health_score);
+
   const update = {
     status: "complete",
     review_type: params.reviewType,
-    health_score: Math.max(0, Math.min(100, params.result.health_score ?? 70)),
+    health_score: safeHealthScore,
     summary: params.result.summary ?? "",
     repo_owner: params.parsed.owner,
     repo_name: params.parsed.repo,
@@ -117,10 +118,8 @@ export async function processReviewBackend(params: {
 
   if (params.accessToken) {
     const uc = userClientFromToken(params.accessToken);
-    const { data, error } = await uc.auth.getUser();
-    if (error || !data.user) throw new Error("Unauthorized");
-    authUser = data.user;
-    userEmail = data.user.email ?? null;
+    authUser = await requireAuthUser(uc, params.accessToken);
+    userEmail = authUser.email ?? null;
     sb = uc; // use user client so RLS sees auth.uid() = user_id
   } else {
     sb = adminClient(); // internal / trusted caller path
@@ -138,7 +137,7 @@ export async function processReviewBackend(params: {
     prUrl: review.pr_url,
   });
 
-  await sb.from("reviews").update({ status: "processing", error_message: null }).eq("id", params.reviewId);
+  await sb.from("reviews").update({ status: "processing", error_message: null, health_score: null }).eq("id", params.reviewId);
 
   const processStart = Date.now();
 
@@ -378,7 +377,7 @@ export async function processReviewBackend(params: {
     const rawMessage = error instanceof Error ? error.message : String(error);
     // Sanitize AI-provider details before storing/surfacing to the user
     const userMessage = sanitizeAiError(rawMessage);
-    await sb.from("reviews").update({ status: "failed", error_message: userMessage }).eq("id", params.reviewId);
+    await sb.from("reviews").update({ status: "failed", error_message: userMessage, health_score: null }).eq("id", params.reviewId);
     logger.error("review.process_failed", {
       requestId,
       reviewId: params.reviewId,

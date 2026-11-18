@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ReportRouteImport } from './routes/report'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -38,6 +39,11 @@ import { Route as WorkspaceOwnerRepoRouteImport } from './routes/workspace.$owne
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RefundsRoute = RefundsRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report': typeof ReportRoute
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report': typeof ReportRoute
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report': typeof ReportRoute
   '/terms': typeof TermsRoute
   '/admin/blog': typeof AdminBlogRoute
   '/admin/credits': typeof AdminCreditsRoute
@@ -255,6 +264,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/refunds'
+    | '/report'
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/refunds'
+    | '/report'
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/refunds'
+    | '/report'
     | '/terms'
     | '/admin/blog'
     | '/admin/credits'
@@ -336,6 +348,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
+  ReportRoute: typeof ReportRoute
   TermsRoute: typeof TermsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   FolderAnalysisIdRoute: typeof FolderAnalysisIdRoute
@@ -353,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refunds': {
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
+  ReportRoute: ReportRoute,
   TermsRoute: TermsRoute,
   BlogSlugRoute: BlogSlugRoute,
   FolderAnalysisIdRoute: FolderAnalysisIdRoute,

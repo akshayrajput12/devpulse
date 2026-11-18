@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getRequiredEnv, getRuntimeEnv } from "../backend/config/env.server.js";
+import { requireAuthUser } from "../backend/http/supabase-auth.server.js";
 import { logger } from "../backend/logging/logger.server.js";
 import { type FolderAnalysisResult } from "../backend/ai/orchestrator.js";
 
@@ -24,8 +25,8 @@ export async function analyzeFolderStructure(data: {
   file_tree: Array<{ path: string; type: string }>;
 }) {
   const uc = userClient(data.access_token);
-  const { data: u } = await uc.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const authUser = await requireAuthUser(uc, data.access_token);
+  const u = { user: authUser };
 
   // 1. Verify credits first (Folder analysis costs 2 credits)
   const cost = 2;
@@ -64,25 +65,18 @@ export async function analyzeFolderStructure(data: {
     throw new Error(`Failed to initialize folder structure audit: ${aErr?.message ?? "unknown error"}`);
   }
 
-  const hasServiceKey = !!getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!hasServiceKey) {
-    console.log("[analyzeFolderStructure] SUPABASE_SERVICE_ROLE_KEY is absent. Processing folder analysis immediately...");
-    const { processFolderAnalysisJob } = await import("../backend/reviews/queue.server.js");
-    await processFolderAnalysisJob(analysis.id, uc);
-    return { id: analysis.id, queued: false };
-  }
-
-  // 4. Enqueue into the background reviews queue
+  // 4. Enqueue into DB queue or bounded in-process fallback (never crashes on 42501)
   const { enqueueFolderAnalysis } = await import("../backend/reviews/queue.server.js");
-  await enqueueFolderAnalysis(analysis.id);
+  const enqueued = await enqueueFolderAnalysis(analysis.id, data.access_token);
 
   logger.info("folder_analysis.enqueued", {
     analysisId: analysis.id,
     userId: u.user.id,
     repoFullName: data.repo_full_name,
+    mode: (enqueued as any)?.mode ?? "db_queue",
   });
 
-  return { id: analysis.id };
+  return { id: analysis.id, queued: true, mode: (enqueued as any)?.mode ?? "db_queue" };
 }
 
 export async function saveFolderAnalysis(data: {
@@ -94,8 +88,8 @@ export async function saveFolderAnalysis(data: {
   file_tree: Array<{ path: string; type: string }>;
 }) {
   const uc = userClient(data.access_token);
-  const { data: u } = await uc.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const authUser = await requireAuthUser(uc, data.access_token);
+  const u = { user: authUser };
 
   const { data: analysis, error: aErr } = await uc
     .from("folder_analyses")
@@ -182,8 +176,8 @@ export async function getFolderAnalysisByToken(data: { token: string }) {
 
 export async function listFolderAnalyses(data: { access_token: string; limit?: number }) {
   const uc = userClient(data.access_token);
-  const { data: u } = await uc.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const authUser = await requireAuthUser(uc, data.access_token);
+  const u = { user: authUser };
 
   const { data: analyses, error } = await uc
     .from("folder_analyses")
@@ -198,8 +192,8 @@ export async function listFolderAnalyses(data: { access_token: string; limit?: n
 
 export async function deleteFolderAnalysis(data: { id: string; access_token: string }) {
   const uc = userClient(data.access_token);
-  const { data: u } = await uc.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const authUser = await requireAuthUser(uc, data.access_token);
+  const u = { user: authUser };
 
   const { error } = await uc
     .from("folder_analyses")

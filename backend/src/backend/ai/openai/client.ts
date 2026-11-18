@@ -1,4 +1,5 @@
 import { logger } from "../../logging/logger.server.js";
+import { parseLenientJson } from "../chunking.js";
 
 const BASE_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -109,13 +110,7 @@ export async function callOpenAIRaw(params: {
 }
 
 export function parseJsonResponse<T>(text: string): T {
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("OpenAI returned a non-JSON response");
-    return JSON.parse(match[0]);
-  }
+  return parseLenientJson<T>(text, "OpenAI");
 }
 
 export async function readOpenAIText(res: Response): Promise<OpenAITextResponse> {

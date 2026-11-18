@@ -77,6 +77,7 @@ export function AppNav() {
           <Link to="/" hash="features" className="hover:text-foreground">Features</Link>
           <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
           <Link to="/blog" className="hover:text-foreground">Blog</Link>
+          <Link to="/report" className="hover:text-foreground">Architecture</Link>
           {user && <Link to="/dashboard" className="hover:text-foreground">Dashboard</Link>}
           {user && (
             <Link id="tour-folder-nav" to="/folder-analysis" className="hover:text-foreground flex items-center gap-1">
@@ -363,6 +364,13 @@ export function AppNav() {
               className="hover:text-foreground py-1 transition-colors"
             >
               Blog
+            </Link>
+            <Link 
+              to="/report" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="hover:text-foreground py-1 transition-colors"
+            >
+              Architecture
             </Link>
             {user && (
               <Link 

@@ -23,7 +23,9 @@ function findEnvFilePath(): string | null {
       if (parent === d) break;
       d = parent;
     }
-  } catch (e) {}
+  } catch {
+    // ignore URL parse issues on Windows paths
+  }
   return null;
 }
 
@@ -50,7 +52,7 @@ function loadFileEnv(): Record<string, string> {
         }
       });
     }
-  } catch (e) {
+  } catch {
     // Ignore errors silently
   }
   fileEnvCache = env;
@@ -62,19 +64,28 @@ function loadFileEnv(): Record<string, string> {
  * Bypasses static compilation / replacement by using runtime bracket lookup.
  */
 export function getRuntimeEnv(key: string): string | undefined {
-  // 1. Direct process.env lookup (ensure it's not undefined and not empty)
-  const envVal = process.env[key];
-  if (envVal !== undefined && envVal !== "") return envVal;
+  const lookup = (k: string): string | undefined => {
+    const envVal = process.env[k];
+    if (envVal !== undefined && envVal.trim() !== "") return envVal.trim();
 
-  // 2. Bracket notation lookup to bypass static compile replacements
-  const processRef = typeof process !== "undefined" ? process : undefined;
-  const liveVal = processRef ? (processRef as any).env?.[key] : undefined;
-  if (liveVal !== undefined && liveVal !== "") return liveVal;
+    const processRef = typeof process !== "undefined" ? process : undefined;
+    const liveVal = processRef ? (processRef as any).env?.[k] : undefined;
+    if (typeof liveVal === "string" && liveVal.trim() !== "") return liveVal.trim();
 
-  // 3. Fallback to reading the .env file directly from disk
-  const fileEnv = loadFileEnv();
-  const fileVal = fileEnv[key];
-  if (fileVal !== undefined && fileVal !== "") return fileVal;
+    const fileEnv = loadFileEnv();
+    const fileVal = fileEnv[k];
+    if (fileVal !== undefined && fileVal.trim() !== "") return fileVal.trim();
+
+    return undefined;
+  };
+
+  const direct = lookup(key);
+  if (direct) return direct;
+
+  // Transparent aliases so Render/Vercel configs never break on naming differences
+  if (key === "SUPABASE_PUBLISHABLE_KEY") return lookup("SUPABASE_ANON_KEY") || lookup("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (key === "SUPABASE_ANON_KEY") return lookup("SUPABASE_PUBLISHABLE_KEY") || lookup("VITE_SUPABASE_ANON_KEY");
+  if (key === "SUPABASE_URL") return lookup("VITE_SUPABASE_URL");
 
   return undefined;
 }
@@ -90,4 +101,35 @@ export function getRequiredEnv(key: string): string {
     throw new Error(errorMsg);
   }
   return val;
+}
+
+/**
+ * Verify whether a Supabase key is genuinely a privileged service_role / secret key
+ * (and not accidentally an anon or sb_publishable_* key).
+ */
+export function isValidServiceRoleKey(key?: string | null): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith("sb_secret_")) return true;
+  if (trimmed.startsWith("sb_publishable_")) return false;
+
+  const parts = trimmed.split(".");
+  if (parts.length === 3) {
+    try {
+      const payloadJson = Buffer.from(parts[1], "base64url").toString("utf-8");
+      const payload = JSON.parse(payloadJson) as { role?: string };
+      return payload.role === "service_role";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns true only if SUPABASE_SERVICE_ROLE_KEY is present and carries service_role privileges.
+ */
+export function hasUsableServiceRoleKey(): boolean {
+  return isValidServiceRoleKey(getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY"));
 }

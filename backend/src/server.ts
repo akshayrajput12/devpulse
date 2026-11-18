@@ -34,6 +34,12 @@ if (fs.existsSync(envPath)) {
 }
 
 import { getRequiredEnv, getRuntimeEnv } from "./backend/config/env.server.js";
+import { getAllowedOrigins, isOriginAllowed } from "./backend/http/cors.server.js";
+import {
+  checkSupabaseConnectivityOnStartup,
+  isNetworkFetchError,
+  isTlsCertError,
+} from "./backend/http/supabase-auth.server.js";
 import { processReviewBackend } from "./backend/reviews/review-processor.server.js";
 import * as blogFunctions from "./functions/blog.js";
 import * as folderAnalysisFunctions from "./functions/folder-analysis.js";
@@ -43,36 +49,20 @@ import * as adminFunctions from "./functions/admin.js";
 const app = express();
 const PORT = parseInt(process.env.PORT || "5000", 10);
 
-// Setup dynamic CORS origins
-const DEFAULT_ALLOWED_ORIGINS = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:3000",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-];
-
-const allowedOrigins = [...DEFAULT_ALLOWED_ORIGINS];
-const configuredOrigins = (process.env.FRONTEND_URL || "")
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
-allowedOrigins.push(...configuredOrigins);
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || isOriginAllowed(origin)) {
         callback(null, true);
       } else {
-        // Fallback: allow, but log a warning
-        console.warn(`[CORS Warning] Origin "${origin}" is not explicitly allowed, but allowing for dev compatibility.`);
         callback(null, true);
       }
     },
     credentials: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
@@ -196,15 +186,12 @@ app.post(
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    // Run the background process review asynchronously
-    processReviewBackend({
-      reviewId: parsed.data.review_id,
-      accessToken: auth.slice(7),
-    }).catch((error) => {
-      console.error("[api/reviews/process] Background review error:", error instanceof Error ? error.message : error);
+    const result = await reviewFunctions.processReview({
+      review_id: parsed.data.review_id,
+      access_token: auth.slice(7),
     });
 
-    return res.json({ ok: true, queued: true, reviewId: parsed.data.review_id });
+    return res.json(result);
   })
 );
 
@@ -899,6 +886,8 @@ app.post(
       access_token: z.string().min(10),
       ai_provider: z.enum(["gemini", "openai", "both"]).optional(),
       parallel_engine_enabled: z.boolean().optional(),
+      queue_concurrency: z.number().int().min(1).max(16).optional(),
+      global_rpm_limit: z.number().int().min(10).max(1000).optional(),
     });
     const parsed = schema.parse(req.body);
     const result = await adminFunctions.updateAdminSettings(parsed);
@@ -906,27 +895,130 @@ app.post(
   })
 );
 
+app.post(
+  "/api/admin/ai-keys",
+  asyncHandler(async (req: express.Request, res: express.Response) => {
+    const schema = z.object({ access_token: z.string().min(10) });
+    const parsed = schema.parse(req.body);
+    const result = await adminFunctions.getAdminAiKeys(parsed);
+    return res.json(result);
+  })
+);
+
+app.post(
+  "/api/admin/ai-keys/create",
+  asyncHandler(async (req: express.Request, res: express.Response) => {
+    const schema = z.object({
+      access_token: z.string().min(10),
+      provider: z.enum(["gemini", "openai"]),
+      api_key: z.string().min(8),
+      label: z.string().optional(),
+    });
+    const parsed = schema.parse(req.body);
+    const result = await adminFunctions.createAdminAiKey(parsed);
+    return res.json(result);
+  })
+);
+
+app.post(
+  "/api/admin/ai-keys/toggle",
+  asyncHandler(async (req: express.Request, res: express.Response) => {
+    const schema = z.object({
+      access_token: z.string().min(10),
+      id: z.string().uuid(),
+      is_active: z.boolean(),
+    });
+    const parsed = schema.parse(req.body);
+    const result = await adminFunctions.toggleAdminAiKey(parsed);
+    return res.json(result);
+  })
+);
+
+app.post(
+  "/api/admin/ai-keys/delete",
+  asyncHandler(async (req: express.Request, res: express.Response) => {
+    const schema = z.object({
+      access_token: z.string().min(10),
+      id: z.string().uuid(),
+    });
+    const parsed = schema.parse(req.body);
+    const result = await adminFunctions.deleteAdminAiKey(parsed);
+    return res.json(result);
+  })
+);
+
+
+// Health Check & Root Manifest Endpoints
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    service: "devpulse-backend",
+    status: "healthy",
+    version: "2.4.0",
+    timestamp: new Date().toISOString(),
+    docs: {
+      health: "GET /health",
+      processReview: "POST /api/reviews/process-review",
+      createReview: "POST /api/reviews/create",
+      folderAnalysis: "POST /api/folder-analysis/analyze",
+      pricingPlans: "GET /api/pricing/plans",
+    },
+  });
+});
+
+app.get("/api/reviews/process-review", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    endpoint: "/api/reviews/process-review",
+    method: "POST",
+    message: "This endpoint accepts POST requests with JSON body { review_id, access_token }.",
+  });
+});
+
+app.get("/api/reviews/process", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    endpoint: "/api/reviews/process",
+    method: "POST",
+    message: "This endpoint accepts POST requests with Bearer Authorization header and JSON body { review_id }.",
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// Clean JSON 404 Handler (prevents raw Express HTML "Cannot GET ..." errors)
+app.use((req, res) => {
+  res.status(404).json({
+    error: `Route ${req.method} ${req.path} not found`,
+    hint: "Verify HTTP method (most /api/* endpoints require POST) and route path.",
+  });
+});
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const isNetworkTimeout = 
-    err.message?.includes("fetch failed") || 
-    err.code === "UND_ERR_CONNECT_TIMEOUT" || 
-    err.code === "ETIMEDOUT" || 
-    err.code === "ENOTFOUND" || 
-    err.code === "ECONNREFUSED" ||
-    String(err).includes("ConnectTimeoutError") ||
-    String(err).includes("undici");
+  if (isTlsCertError(err)) {
+    console.warn(
+      `\x1b[33m[TLS Certificate Error]\x1b[0m ${req.method} ${req.path} failed with SELF_SIGNED_CERT_IN_CHAIN. ` +
+        `Configure NODE_EXTRA_CA_CERTS for your proxy/antivirus root CA or exclude *.supabase.co from HTTPS inspection.`,
+    );
+    return res.status(503).json({
+      error: err.message || "TLS certificate verification failed (SELF_SIGNED_CERT_IN_CHAIN) while connecting to Supabase.",
+      code: "SELF_SIGNED_CERT_IN_CHAIN",
+    });
+  }
 
-  if (isNetworkTimeout) {
-    console.warn(`\x1b[33m[Supabase Network Error]\x1b[0m Failed to reach Supabase API (${err.message || err.code || "Connection Timeout"}). Server remains fully operational.`);
+  if (isNetworkFetchError(err)) {
+    console.warn(
+      `\x1b[33m[Supabase Network Error]\x1b[0m Failed to reach Supabase API (${err.message || err.code || "Connection Timeout"}). Server remains fully operational.`,
+    );
     return res.status(503).json({
       error: "Authentication server is temporarily unreachable. Please check your network connection.",
     });
   }
 
   // Handle expected unauthorized session expiration warning cleanly
-  if (err.message === "Unauthorized") {
+  if (err.message === "Unauthorized" || err.status === 401) {
     console.warn(`\x1b[33m[Auth Warning]\x1b[0m Unauthorized access request to path: ${req.path}`);
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -937,15 +1029,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   return res.status(status).json({ error: message });
 });
 
-// Health Check Endpoint (Lightweight status check for CDNs and pingers)
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
-});
-
 // Start the server
 app.listen(PORT, () => {
   console.log(`[Server] Express API server running on http://localhost:${PORT}`);
   console.log(`[Server] Dynamic CORS configured for frontend at: ${allowedOrigins.join(", ")}`);
+  checkSupabaseConnectivityOnStartup().catch(() => {});
   
   // Render Free Tier Keep-Alive pinger
   const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;

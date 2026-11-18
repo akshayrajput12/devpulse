@@ -1,42 +1,54 @@
 import { createClient } from "@supabase/supabase-js";
-import { getRequiredEnv, getRuntimeEnv } from "../backend/config/env.server.js";
+import { getRequiredEnv, getRuntimeEnv, hasUsableServiceRoleKey } from "../backend/config/env.server.js";
+import { requireAuthUser } from "../backend/http/supabase-auth.server.js";
 
-function adminClient() {
+function publishableKey() {
+  return getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") || getRequiredEnv("SUPABASE_ANON_KEY");
+}
+
+function adminClient(userToken?: string) {
   const url = getRequiredEnv("SUPABASE_URL");
-  const key = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY") || getRequiredEnv("SUPABASE_PUBLISHABLE_KEY");
-  return createClient(url, key, { auth: { persistSession: false } });
+  if (hasUsableServiceRoleKey()) {
+    return createClient(url, getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+      auth: { persistSession: false },
+    });
+  }
+  if (userToken) return userClient(userToken);
+  return createClient(url, publishableKey(), { auth: { persistSession: false } });
 }
 
 function userClient(token: string) {
   return createClient(
     getRequiredEnv("SUPABASE_URL"),
-    getRequiredEnv("SUPABASE_PUBLISHABLE_KEY"),
+    publishableKey(),
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 }
 
 async function verifyAdmin(token: string): Promise<boolean> {
-  try {
-    const uc = userClient(token);
-    const { data: userData, error } = await uc.auth.getUser(token);
-    if (error || !userData.user) return false;
+  const uc = userClient(token);
+  const authUser = await requireAuthUser(uc, token);
 
-    const { data: profile, error: pErr } = await uc
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", userData.user.id)
-      .maybeSingle();
+  const { data: profile, error: pErr } = await uc
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", authUser.id)
+    .maybeSingle();
 
-    if (pErr || !profile) return false;
-    return !!profile.is_admin;
-  } catch {
-    return false;
-  }
+  if (pErr || !profile) return false;
+  return !!profile.is_admin;
 }
 
 export async function checkAdminStatus(data: { access_token: string }) {
-  const isAdmin = await verifyAdmin(data.access_token);
-  return { isAdmin };
+  try {
+    const isAdmin = await verifyAdmin(data.access_token);
+    return { isAdmin };
+  } catch (err: any) {
+    if (err?.status === 401 || err?.message === "Unauthorized") {
+      return { isAdmin: false };
+    }
+    throw err;
+  }
 }
 
 export async function getAdminMetrics(data: { access_token: string }) {
@@ -50,10 +62,15 @@ export async function getAdminMetrics(data: { access_token: string }) {
   const { count: failedCount } = await sb.from("reviews").select("*", { count: "exact", head: true }).eq("status", "failed");
   const { count: pendingQueueCount } = await sb.from("review_queue").select("*", { count: "exact", head: true }).eq("status", "pending");
 
-  const { data: avgData } = await sb.from("reviews").select("health_score").not("health_score", "is", null);
-  const avgScore = avgData && avgData.length 
-    ? Math.round(avgData.reduce((acc, curr) => acc + (curr.health_score ?? 0), 0) / avgData.length)
-    : 82;
+  const { data: avgData } = await sb
+    .from("reviews")
+    .select("health_score")
+    .eq("status", "complete")
+    .not("health_score", "is", null);
+  const avgScore =
+    avgData && avgData.length
+      ? Math.round(avgData.reduce((acc, curr) => acc + (curr.health_score ?? 0), 0) / avgData.length)
+      : 0;
 
   const { data: recentReviews } = await sb
     .from("reviews")
@@ -250,19 +267,20 @@ export async function getAdminSettings(data: { access_token: string }) {
   const isAdmin = await verifyAdmin(data.access_token);
   if (!isAdmin) throw new Error("Unauthorized");
 
-  const sb = userClient(data.access_token);
+  const sb = adminClient(data.access_token);
   const { data: settings, error } = await sb
     .from("system_settings")
     .select("key, value");
 
   if (error) throw new Error(error.message);
 
-  const providerSetting = settings?.find(s => s.key === "ai_provider");
-  const parallelSetting = settings?.find(s => s.key === "parallel_engine_enabled");
+  const find = (k: string) => settings?.find(s => s.key === k)?.value;
 
   return {
-    ai_provider: providerSetting?.value || "both",
-    parallel_engine_enabled: parallelSetting ? parallelSetting.value === "true" : true,
+    ai_provider: (find("ai_provider") as "gemini" | "openai" | "both") || "both",
+    parallel_engine_enabled: find("parallel_engine_enabled") ? find("parallel_engine_enabled") === "true" : true,
+    queue_concurrency: parseInt(find("queue_concurrency") || "4", 10) || 4,
+    global_rpm_limit: parseInt(find("global_rpm_limit") || "100", 10) || 100,
   };
 }
 
@@ -270,30 +288,115 @@ export async function updateAdminSettings(data: {
   access_token: string;
   ai_provider?: "gemini" | "openai" | "both";
   parallel_engine_enabled?: boolean;
+  queue_concurrency?: number;
+  global_rpm_limit?: number;
 }) {
   const isAdmin = await verifyAdmin(data.access_token);
   if (!isAdmin) throw new Error("Unauthorized");
 
-  const sb = userClient(data.access_token);
+  const sb = adminClient(data.access_token);
+  const now = new Date().toISOString();
 
+  const upserts: Array<{ key: string; value: string; updated_at: string }> = [];
   if (data.ai_provider !== undefined) {
-    const { error } = await sb
-      .from("system_settings")
-      .upsert({ key: "ai_provider", value: data.ai_provider, updated_at: new Date().toISOString() });
-    if (error) throw new Error(error.message);
+    upserts.push({ key: "ai_provider", value: data.ai_provider, updated_at: now });
   }
-
   if (data.parallel_engine_enabled !== undefined) {
-    const { error } = await sb
-      .from("system_settings")
-      .upsert({
-        key: "parallel_engine_enabled",
-        value: String(data.parallel_engine_enabled),
-        updated_at: new Date().toISOString(),
-      });
+    upserts.push({ key: "parallel_engine_enabled", value: String(data.parallel_engine_enabled), updated_at: now });
+  }
+  if (data.queue_concurrency !== undefined) {
+    upserts.push({ key: "queue_concurrency", value: String(data.queue_concurrency), updated_at: now });
+  }
+  if (data.global_rpm_limit !== undefined) {
+    upserts.push({ key: "global_rpm_limit", value: String(data.global_rpm_limit), updated_at: now });
+  }
+
+  if (upserts.length > 0) {
+    const { error } = await sb.from("system_settings").upsert(upserts);
     if (error) throw new Error(error.message);
   }
 
+  return { ok: true };
+}
+
+export async function getAdminAiKeys(data: { access_token: string }) {
+  const isAdmin = await verifyAdmin(data.access_token);
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const sb = adminClient(data.access_token);
+  const { data: keys, error } = await sb
+    .from("system_ai_keys")
+    .select("id, provider, label, is_active, created_at, updated_at, api_key_encrypted")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  // Return masked key suffix only so full credentials are never exposed in browser network payloads
+  return (keys ?? []).map((k: any) => ({
+    id: k.id,
+    provider: k.provider,
+    label: k.label,
+    is_active: k.is_active,
+    created_at: k.created_at,
+    updated_at: k.updated_at,
+    key_last4: typeof k.api_key_encrypted === "string" ? k.api_key_encrypted.slice(-4) : "****",
+  }));
+}
+
+export async function createAdminAiKey(data: {
+  access_token: string;
+  provider: "gemini" | "openai";
+  api_key: string;
+  label?: string;
+}) {
+  const isAdmin = await verifyAdmin(data.access_token);
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const sb = adminClient(data.access_token);
+  const label = data.label?.trim() || `${data.provider.toUpperCase()} Key - ${new Date().toLocaleDateString()}`;
+  const trimmedKey = data.api_key.trim();
+
+  const { data: inserted, error } = await sb
+    .from("system_ai_keys")
+    .insert({
+      provider: data.provider,
+      api_key_encrypted: trimmedKey,
+      label,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, provider, label, is_active, created_at, updated_at")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return { ...inserted, key_last4: trimmedKey.slice(-4) };
+}
+
+export async function toggleAdminAiKey(data: {
+  access_token: string;
+  id: string;
+  is_active: boolean;
+}) {
+  const isAdmin = await verifyAdmin(data.access_token);
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const sb = adminClient(data.access_token);
+  const { error } = await sb
+    .from("system_ai_keys")
+    .update({ is_active: data.is_active, updated_at: new Date().toISOString() })
+    .eq("id", data.id);
+
+  if (error) throw new Error(error.message);
+  return { ok: true };
+}
+
+export async function deleteAdminAiKey(data: { access_token: string; id: string }) {
+  const isAdmin = await verifyAdmin(data.access_token);
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  const sb = adminClient(data.access_token);
+  const { error } = await sb.from("system_ai_keys").delete().eq("id", data.id);
+  if (error) throw new Error(error.message);
   return { ok: true };
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getRequiredEnv, getRuntimeEnv } from "../backend/config/env.server.js";
+import { requireAuthUser } from "../backend/http/supabase-auth.server.js";
 import { processReviewBackend } from "../backend/reviews/review-processor.server.js";
 import { fetchRepoTree } from "../backend/github/repository.server.js";
 import crypto from "crypto";
@@ -66,36 +67,22 @@ export async function processReview(data: { review_id: string; access_token: str
     }
   }
 
-  const hasServiceKey = !!getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!hasServiceKey) {
-    console.log("[processReview] SUPABASE_SERVICE_ROLE_KEY is absent. Processing review immediately using user client...");
-    await processReviewBackend({
-      reviewId: data.review_id,
-      accessToken: data.access_token,
-    });
-    return { ok: true, queued: false };
-  }
+  const { enqueueReview } = await import("../backend/reviews/queue.server.js");
+  const enqueued = await enqueueReview(data.review_id, reviewType, data.access_token);
 
-  const { enqueueReview, triggerQueueWorker } = await import("../backend/reviews/queue.server.js");
-  await enqueueReview(data.review_id, reviewType);
-
-  // Run the worker asynchronously
-  (async () => {
-    try {
-      const { triggerQueueWorker: trigger } = await import("../backend/reviews/queue.server.js");
-      trigger();
-    } catch (e) {
-      console.error("[processReview] worker trigger error:", e);
-    }
-  })();
-
-  return { ok: true, queued: true };
+  return {
+    ok: true,
+    queued: true,
+    mode: (enqueued as any)?.mode ?? "db_queue",
+    reviewId: data.review_id,
+    reviewType,
+  };
 }
 
 export async function createReview(data: { pr_url: string; access_token: string; user_id: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: userData, error: uErr } = await userClient.auth.getUser(data.access_token);
-  if (uErr || !userData.user || userData.user.id !== data.user_id) {
+  const authUser = await requireAuthUser(userClient, data.access_token);
+  if (authUser.id !== data.user_id) {
     throw new Error("Unauthorized");
   }
 
@@ -109,7 +96,7 @@ export async function createReview(data: { pr_url: string; access_token: string;
     throw new Error(`Monthly limit reached (${limit}). Upgrade your plan.`);
   }
 
-  const ghToken = (userData.user.user_metadata as any)?.provider_token ?? null;
+  const ghToken = (authUser.user_metadata as any)?.provider_token ?? null;
   if (ghToken) {
     await sb.from("profiles").update({ github_access_token: ghToken })
       .eq("id", data.user_id);
@@ -120,6 +107,7 @@ export async function createReview(data: { pr_url: string; access_token: string;
     user_id: data.user_id,
     pr_url: data.pr_url,
     status: "pending",
+    health_score: null,
     share_token: shareToken,
   }).select().single();
   if (error || !review) throw new Error(error?.message ?? "insert failed");
@@ -129,12 +117,11 @@ export async function createReview(data: { pr_url: string; access_token: string;
 
 export async function retryReview(data: { review_id: string; access_token: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
   const { data: r } = await userClient.from("reviews").select("user_id")
     .eq("id", data.review_id).maybeSingle();
-  if (!r || r.user_id !== u.user.id) throw new Error("Not found");
+  if (!r || r.user_id !== user.id) throw new Error("Not found");
 
   await userClient.from("findings").delete().eq("review_id", data.review_id);
   await userClient.from("reviews")
@@ -145,10 +132,9 @@ export async function retryReview(data: { review_id: string; access_token: strin
 
 export async function getUserRepos(data: { access_token: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
-  const token = await getGithubToken(userClient, u.user.id, u.user.user_metadata);
+  const token = await getGithubToken(userClient, user.id, user.user_metadata);
   if (!token) throw new Error("GitHub token not found. Please log in with GitHub again.");
 
   const res = await fetch("https://api.github.com/user/repos?sort=updated&per_page=100", {
@@ -173,10 +159,9 @@ export async function getUserRepos(data: { access_token: string }) {
 
 export async function getRepoPullRequests(data: { access_token: string; owner: string; repo: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
-  const token = await getGithubToken(userClient, u.user.id, u.user.user_metadata);
+  const token = await getGithubToken(userClient, user.id, user.user_metadata);
   if (!token) throw new Error("GitHub token not found. Please log in with GitHub again.");
 
   const res = await fetch(`https://api.github.com/repos/${data.owner}/${data.repo}/pulls?state=open&per_page=50`, {
@@ -201,21 +186,19 @@ export async function getRepoPullRequests(data: { access_token: string; owner: s
 
 export async function getRepoGitTree(data: { owner: string; repo: string; access_token: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
-  const token = await getGithubToken(userClient, u.user.id, u.user.user_metadata);
+  const token = await getGithubToken(userClient, user.id, user.user_metadata);
 
   return fetchRepoTree(data.owner, data.repo, token);
 }
 
 export async function applyFindingFix(data: { review_id: string; finding_id: string; access_token: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
   const { data: review } = await userClient.from("reviews").select("*").eq("id", data.review_id).single();
-  if (!review || review.user_id !== u.user.id) throw new Error("Not found");
+  if (!review || review.user_id !== user.id) throw new Error("Not found");
 
   const { data: finding } = await userClient.from("findings").select("*").eq("id", data.finding_id).single();
   if (!finding || finding.review_id !== data.review_id) throw new Error("Finding not found");
@@ -226,7 +209,7 @@ export async function applyFindingFix(data: { review_id: string; finding_id: str
   if (!finding.file_path) throw new Error("Cannot apply fix: finding has no file path.");
   if (!finding.suggested_fix) throw new Error("Cannot apply fix: finding has no suggested fix.");
 
-  const token = await getGithubToken(userClient, u.user.id, u.user.user_metadata);
+  const token = await getGithubToken(userClient, user.id, user.user_metadata);
   if (!token) throw new Error("GitHub token not found. Please log in with GitHub again.");
 
   const ghHeaders: Record<string, string> = {
@@ -368,18 +351,17 @@ function buildHumanBody(findings: any[], review: any, reviewerName: string, revi
 
 export async function postReviewStyled(data: { review_id: string; access_token: string; style: "devpulse" | "human"; reviewer_name: string; reviewer_login: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
   const { data: review } = await userClient.from("reviews").select("*").eq("id", data.review_id).single();
-  if (!review || review.user_id !== u.user.id) throw new Error("Not found");
+  if (!review || review.user_id !== user.id) throw new Error("Not found");
   if (!review.pr_number || !review.repo_owner || !review.repo_name) {
     throw new Error("This review is not linked to a GitHub PR.");
   }
 
   const { data: findings } = await userClient.from("findings").select("*").eq("review_id", data.review_id).order("severity");
 
-  const token = await getGithubToken(userClient, u.user.id, u.user.user_metadata);
+  const token = await getGithubToken(userClient, user.id, user.user_metadata);
   if (!token) throw new Error("GitHub token not found. Please re-authenticate with GitHub.");
 
   const ghHeaders: Record<string, string> = {
@@ -449,11 +431,10 @@ export async function postReviewStyled(data: { review_id: string; access_token: 
 
 export async function emailReviewReport(data: { review_id: string; email: string; access_token: string }) {
   const userClient = userClientFromToken(data.access_token);
-  const { data: u } = await userClient.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(userClient, data.access_token);
 
   const { data: review } = await userClient.from("reviews").select("*").eq("id", data.review_id).single();
-  if (!review || review.user_id !== u.user.id) throw new Error("Review not found");
+  if (!review || review.user_id !== user.id) throw new Error("Review not found");
 
   const { data: findings } = await userClient.from("findings").select("*").eq("review_id", data.review_id).order("severity");
 
@@ -474,15 +455,14 @@ export async function emailReviewReport(data: { review_id: string; email: string
 
 export async function getUserProfileData(data: { access_token: string }) {
   const uc = userClientFromToken(data.access_token);
-  const { data: u } = await uc.auth.getUser();
-  if (!u.user) throw new Error("Unauthorized");
+  const user = await requireAuthUser(uc, data.access_token);
 
-  await uc.rpc("check_and_renew_profile_limits", { profile_id: u.user.id });
+  await uc.rpc("check_and_renew_profile_limits", { profile_id: user.id });
 
   const { data: profile, error } = await uc
     .from("profiles")
     .select("id, email, plan, review_credits, last_reset_at, subscription_expires_at, is_admin, display_name, avatar_url")
-    .eq("id", u.user.id)
+    .eq("id", user.id)
     .single();
 
   if (error || !profile) {
