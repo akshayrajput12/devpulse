@@ -67,7 +67,8 @@ async function saveResult(params: {
   const findings = normalizeFindings(params.reviewId, params.result.findings || []);
   if (findings.length) await params.sb.from("findings").insert(findings);
 
-  const safeHealthScore = computeDeterministicHealthScore(findings, params.result.health_score);
+  const auditedFileCount = Number(params.meta?.changed_files) || 1;
+  const safeHealthScore = computeDeterministicHealthScore(findings, params.result.health_score, auditedFileCount);
 
   const update = {
     status: "complete",

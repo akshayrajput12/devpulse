@@ -11,7 +11,9 @@ import {
   buildBudgetedChunks,
   buildFallbackSynthesisReport,
   computeDeterministicHealthScore,
+  formatNumberedFileBlock,
   isRetryableHttpStatus,
+  mergeSynthesizedWithOriginals,
   normalizeAndDedupeFindings,
   runPhasePool,
 } from "../chunking.js";
@@ -35,10 +37,7 @@ async function auditFileChunk(params: {
   filesContent: Record<string, string>;
 }): Promise<{ findings: any[]; usage: OpenAIUsage }> {
   const fileBlocks = params.chunkFiles
-    .map(path => {
-      const content = params.filesContent[path] ?? "";
-      return `=== FILE: ${path} ===\n${content.slice(0, 8000)}${content.length > 8000 ? "\n... (truncated)" : ""}`;
-    })
+    .map(path => formatNumberedFileBlock(path, params.filesContent[path] ?? "", 8000))
     .join("\n\n");
 
   const userContent = `REPOSITORY: ${params.repoFullName} (Phase Chunk ${params.chunkIndex + 1}/${params.totalChunks})\n\nFILES TO AUDIT IN THIS CHUNK:\n${params.chunkFiles.map(f => `- ${f}`).join("\n")}\n\nFILE CONTENTS:\n\n${fileBlocks}`;
@@ -100,10 +99,7 @@ export async function callCodebaseAuditAI(params: {
 
   if (files.length <= 10 && totalChars <= 32_000 && !parallelEnabled) {
     const fileBlocks = files
-      .map(path => {
-        const content = params.filesContent[path] ?? "";
-        return `=== FILE: ${path} ===\n${content.slice(0, 8000)}${content.length > 8000 ? "\n... (truncated)" : ""}`;
-      })
+      .map(path => formatNumberedFileBlock(path, params.filesContent[path] ?? "", 8000))
       .join("\n\n");
 
     const userContent = `REPOSITORY: ${params.repoFullName}\n\nAUDITED FILES (${files.length}):\n${files.map(f => `- ${f}`).join("\n")}\n\nFILE CONTENTS:\n\n${fileBlocks}`;
@@ -124,9 +120,9 @@ export async function callCodebaseAuditAI(params: {
         if (res.ok) {
           const { text, usage } = await readOpenAIText(res);
           const parsed: any = parseJsonResponse(text);
-          const findings = normalizeAndDedupeFindings(parsed.findings ?? [], 20);
+          const findings = normalizeAndDedupeFindings(parsed.findings ?? [], 20, params.filesContent);
           return {
-            health_score: computeDeterministicHealthScore(findings, parsed.health_score),
+            health_score: computeDeterministicHealthScore(findings, parsed.health_score, files.length),
             summary: parsed.summary || "",
             audited_files: files,
             findings,
@@ -191,13 +187,13 @@ export async function callCodebaseAuditAI(params: {
     throw new Error(`OpenAI codebase audit failed on all ${failedChunks} chunk(s).`);
   }
 
-  const normalizedFindings = normalizeAndDedupeFindings(mergedRaw, 25);
+  const normalizedFindings = normalizeAndDedupeFindings(mergedRaw, 25, params.filesContent);
 
   const synthesisUserContent = `REPOSITORY: ${params.repoFullName}
 AUDITED FILES (${files.length}):
 ${files.map(f => `- ${f}`).join("\n")}
 
-ACCUMULATED CHUNK FINDINGS (${normalizedFindings.length}):
+ACCUMULATED CHUNK FINDINGS (${normalizedFindings.length}) — IMPORTANT: PRESERVE exact bad_code, suggested_fix, line_start, and line_end verbatim for every finding you include:
 ${JSON.stringify(normalizedFindings, null, 2)}`;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -216,8 +212,10 @@ ${JSON.stringify(normalizedFindings, null, 2)}`;
       if (res.ok) {
         const { text, usage } = await readOpenAIText(res);
         const parsed: any = parseJsonResponse(text);
-        const finalFindings = normalizeAndDedupeFindings(
-          parsed.findings?.length ? parsed.findings : normalizedFindings,
+        const finalFindings = mergeSynthesizedWithOriginals(
+          parsed.findings,
+          normalizedFindings,
+          params.filesContent,
           20,
         );
         const finalUsage: OpenAIUsage = {
@@ -225,7 +223,7 @@ ${JSON.stringify(normalizedFindings, null, 2)}`;
           candidatesTokenCount: chunkCandidateTokens + (usage.candidatesTokenCount ?? 0),
           totalTokenCount: chunkTotalTokens + (usage.totalTokenCount ?? 0),
         };
-        const healthScore = computeDeterministicHealthScore(finalFindings, parsed.health_score);
+        const healthScore = computeDeterministicHealthScore(finalFindings, parsed.health_score, files.length);
 
         return {
           health_score: healthScore,
@@ -253,6 +251,7 @@ ${JSON.stringify(normalizedFindings, null, 2)}`;
     targetName: params.repoFullName,
     files,
     findings: normalizedFindings,
+    filesContent: params.filesContent,
     failedChunks,
   });
   return {

@@ -153,8 +153,11 @@ architectural problem, and production-readiness gap in these files.
 
 # Constraints
 - The "suggested_fix" MUST be the COMPLETE, runnable replacement — no "...", no abbreviations.
-- The "bad_code" MUST be the complete original block at the same scope.
+- The "bad_code" MUST be the complete original block at the same scope copied verbatim from the provided file (NEVER leave bad_code empty).
+- Use the exact 1-based line numbers shown at the start of each line for line_start and line_end.
+- NEVER report DEVPULSE_CONTEXT_LIMIT trimming notes or end-of-slice lines as syntax errors or truncated files.
 - Every finding's file_path MUST exactly match one of the files provided in this chunk.
+- Cover multiple categories when real issues exist (security, performance, architecture, reliability, testability, readability).
 - If a file is completely clean, do not emit any findings for it (unless all files in this chunk are clean, in which case emit one finding with severity "ok" referencing one of the files).
 
 # JSON Schema — return this exact shape
@@ -187,7 +190,9 @@ Your job is to:
 3. Write a comprehensive codebase "summary" in markdown, evaluating the overall project structure, architectural choices, security posture, reliability, testability, and maintainability.
 
 # Constraints
-- You MUST maintain the structured JSON schema for findings.
+- You MUST maintain the structured JSON schema for findings and PRESERVE exact bad_code, suggested_fix, line_start, and line_end verbatim from the accumulated chunk findings (NEVER omit or empty bad_code or suggested_fix).
+- Keep balanced category representation across all 6 categories (security, performance, architecture, reliability, testability, readability) whenever findings exist.
+- NEVER report context-window truncation as a syntax error.
 - The summary MUST include the following specific headers in order:
   ### 📌 Codebase & Folder Architecture
   [Evaluate overall file tree layout and recommend a production-ready ASCII tree structure]

@@ -15,6 +15,7 @@ import {
   buildFallbackSynthesisReport,
   computeDeterministicHealthScore,
   isRetryableHttpStatus,
+  mergeSynthesizedWithOriginals,
   normalizeAndDedupeFindings,
   runPhasePool,
 } from "../chunking.js";
@@ -333,8 +334,10 @@ export async function callPrReviewAI(params: {
   }
 
   // Phase 2 & 3: Context Extraction + Phase-Wise Per-File Audit (bounded concurrency + partial isolation)
+  const rawFilesMap: Record<string, string> = {};
   const auditPool = await runPhasePool(filesToReview, parallelEnabled ? 2 : 1, async ({ path, chunk }) => {
     const rawContent = await tryFetchFileFromGithub(params.owner, params.repo, path, params.headSha, params.token);
+    if (rawContent) rawFilesMap[path] = rawContent;
     const changedLines = getChangedLineNumbers(chunk);
     const slice = rawContent && changedLines.length > 0 ? extractContext(rawContent, changedLines) : chunk;
     if (!slice) return { findings: [], usage: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 } };
@@ -368,14 +371,15 @@ export async function callPrReviewAI(params: {
     throw new Error(`Gemini PR audit failed on all ${failedFiles} file(s); triggering failover.`);
   }
 
-  const normalizedFindings = normalizeAndDedupeFindings(rawFindings, 20);
+  const normalizedFindings = normalizeAndDedupeFindings(rawFindings, 20, rawFilesMap);
 
-  // Phase 4: Holistic Synthesis + Deterministic Scoring
+  // Phase 4: Holistic Synthesis + Lossless Hydration + Deterministic Scoring
   const synthesisUserContent = JSON.stringify(
     {
       pr_metadata: params.prMeta,
       changed_files: changedFiles,
       parallel_audit_findings: normalizedFindings,
+      note: "PRESERVE exact bad_code, suggested_fix, line_start, and line_end verbatim for every finding.",
     },
     null,
     2,
@@ -429,6 +433,7 @@ export async function callPrReviewAI(params: {
       targetName: `${params.owner}/${params.repo}`,
       files: changedFiles,
       findings: normalizedFindings,
+      filesContent: rawFilesMap,
       failedChunks: failedFiles,
     });
     return {
@@ -440,11 +445,13 @@ export async function callPrReviewAI(params: {
     };
   }
 
-  const synthesizedFindings = normalizeAndDedupeFindings(
-    parsedSynthesis.findings?.length ? parsedSynthesis.findings : normalizedFindings,
+  const synthesizedFindings = mergeSynthesizedWithOriginals(
+    parsedSynthesis.findings,
+    normalizedFindings,
+    rawFilesMap,
     20,
   );
-  const healthScore = computeDeterministicHealthScore(synthesizedFindings, parsedSynthesis.health_score);
+  const healthScore = computeDeterministicHealthScore(synthesizedFindings, parsedSynthesis.health_score, changedFiles.length);
 
   return {
     health_score: healthScore,
